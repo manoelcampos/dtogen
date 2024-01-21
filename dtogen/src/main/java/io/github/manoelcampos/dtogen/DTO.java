@@ -13,11 +13,11 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.SOURCE)
 public @interface DTO {
     /**
-     * Indicates that the annotated field must not be included in the generated DTO.
+     * Indicates that the annotated field must be excluded from the generated DTO.
      */
     @Target(ElementType.FIELD)
     @Retention(RetentionPolicy.SOURCE)
-    @interface Ignore {
+    @interface Exclude {
     }
 
     /**
@@ -29,6 +29,6 @@ public @interface DTO {
      */
     @Target(ElementType.FIELD)
     @Retention(RetentionPolicy.SOURCE)
-    @interface MapIdOnly {
+    @interface MapToId {
     }
 }

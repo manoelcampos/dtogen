@@ -25,10 +25,10 @@ public class Person {
     @Min(5) @Max(50)
     private int footSize;
 
-    @DTO.IgnoreField
+    @DTO.Exclude
     private String password;
 
-    @DTO.MapIdOnly
+    @DTO.MapToId
     private Country country;
 
     private Profession profession;

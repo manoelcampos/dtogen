@@ -24,17 +24,17 @@ public class Person {
 
 That will create a `PersonDTO` record, where all instance fields are included in the DTO.
 However, you can use `@DTO` sub annotations to configure how the DTO record is created.
-For instance, the `@DTO.Ignore` will exclude the field from the DTO record.
+For instance, the `@DTO.Exclude` will exclude the field from the DTO record.
 
-The `@DTO.MapIdOnly` can also be used in fields whose the type is anoter model class,
+The `@DTO.MapToId` can also be used in fields whose the type is anoter model class,
 so that instead of including the entire object as an attribute in the DTO record,
 only its id will be included. This way, including this annotation on a `country` field will generate a `countryId` field on the DTO.
 
 ```java
-    @DTO.Ignore
+    @DTO.Exclude
     private String password;
 
-    @DTO.MapIdOnly
+    @DTO.MapToId
     private Country country;
 ```
 

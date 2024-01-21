@@ -88,7 +88,7 @@ public class DTOProcessor extends AbstractProcessor {
      */
     private String dtoFields(final TypeElement classTypeElement) {
         return getClassFields(classTypeElement)
-                        .filter(field -> field.getAnnotation(DTO.Ignore.class) == null)
+                        .filter(field -> field.getAnnotation(DTO.Exclude.class) == null)
                         .map(field -> createDtoRecordField(classTypeElement, field))
                         .collect(joining(", "));
     }
@@ -107,10 +107,10 @@ public class DTOProcessor extends AbstractProcessor {
     private String createDtoRecordField(final TypeElement classTypeElement, final VariableElement field) {
         final var fieldAnnotationMirrors = field.getAnnotationMirrors();
         final var fieldAnnotationsStr = getFieldAnnotationsStr(fieldAnnotationMirrors);
-        if(fieldAnnotationMirrors.stream().anyMatch(mirror -> isAnnotationEqualTo(mirror, DTO.MapIdOnly.class))){
+        if(fieldAnnotationMirrors.stream().anyMatch(mirror -> isAnnotationEqualTo(mirror, DTO.MapToId.class))){
             final var fieldType = getClassTypeElement(field);
             final var msg = "Cannot find id field in %s. Since the %s.%s is annotated with %s, it must be a class with an id field."
-                              .formatted(fieldType.getSimpleName(), classTypeElement.getSimpleName(), field.getSimpleName(), getAnnotationName(DTO.MapIdOnly.class));
+                              .formatted(fieldType.getSimpleName(), classTypeElement.getSimpleName(), field.getSimpleName(), getAnnotationName(DTO.MapToId.class));
 
             return findIdField(fieldType)
                     .map(idField -> String.format("%s %s %s", getFieldAnnotationsStr(idField.getAnnotationMirrors()), getFieldType(idField), field.getSimpleName() + "Id"))
@@ -136,7 +136,7 @@ public class DTOProcessor extends AbstractProcessor {
 
     /**
      * Gets the fully qualified name of an annotation class, replacing the dollar sign ($) by a dot (.) for annotations
-     * defined inside other ones (such as {@link io.github.manoelcampos.dtogen.DTO.MapIdOnly}).
+     * defined inside other ones (such as {@link DTO.MapToId}).
      * @param annotationClassClass the annotation class to get its name
      * @return
      */
