@@ -41,3 +41,7 @@ only its id will be included. This way, including this annotation on a `country`
 ```
 
 For more details, check the [sample](samples) projects.
+
+## Details
+
+The good part about the library is that if you use Hibernate Validation Annotations of other ones, they will be copied to the DTO fields.
