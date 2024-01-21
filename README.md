@@ -11,9 +11,7 @@ This is the only annotation required to create a DTO.
 
 ```java
 @DTO 
-public class Person implements Serializable {
-    private static final long serialVersionUID = 1L;
-
+public class Person {
     private long id;
     private String name;
     private double weightKg;
