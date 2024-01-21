@@ -40,4 +40,4 @@ only its id will be included. This way, including this annotation on a `country`
     private Country country;
 ```
 
-For more details, check the [samples](samples) projects.
+For more details, check the [sample](samples) projects.
