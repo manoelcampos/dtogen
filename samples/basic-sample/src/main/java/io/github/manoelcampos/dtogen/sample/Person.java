@@ -6,15 +6,12 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.io.Serial;
-import java.io.Serializable;
-
 /**
  * @author Manoel Campos
  */
 @DTO @Data @AllArgsConstructor @NoArgsConstructor
-public class Person implements Serializable {
-    @Serial
+public class Person {
+    // Constants aren't included in the DTO record
     private static final long serialVersionUID = 1L;
 
     private long id;
