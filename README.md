@@ -62,8 +62,8 @@ The good part about the library is that if you use Lombok, Hibernate Validation 
 
 ## 4. Troubleshooting
 
-If DTO records are not being generated, and you are using IntelliJ IDEA, try to:
+If you try to use a DTO such as the `PersonDTO` in the example above, and the IDE shows an error saying the DTO record doesn't exist, follow the steps below:
 
-1. enable the "Annotation Processing" in the IDE settings (usually a notificatio is shown when you open the project that has the library included);
+1. enable the "Annotation Processing" in the IDE settings (that is required if you are using IntelliJ IDEA: usually a notificatio is shown when you open the project that has the library included);
 2. build the project using, for instance, `mvn clean package` in the command line;
-3. just after that, try to run the project (even if it is showing that the DTO records don't exist).
+3. just after that, try to run the project (even if it is showing that the DTO records don't exist, usually after that they are generated and the code works).
