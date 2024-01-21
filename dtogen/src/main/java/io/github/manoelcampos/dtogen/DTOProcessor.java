@@ -88,7 +88,7 @@ public class DTOProcessor extends AbstractProcessor {
      */
     private String dtoFields(final TypeElement classTypeElement) {
         return getClassFields(classTypeElement)
-                        .filter(field -> field.getAnnotation(DTO.IgnoreField.class) == null)
+                        .filter(field -> field.getAnnotation(DTO.Ignore.class) == null)
                         .map(field -> createDtoRecordField(classTypeElement, field))
                         .collect(joining(", "));
     }

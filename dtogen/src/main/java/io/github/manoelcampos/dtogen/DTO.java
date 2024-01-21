@@ -17,7 +17,7 @@ public @interface DTO {
      */
     @Target(ElementType.FIELD)
     @Retention(RetentionPolicy.SOURCE)
-    @interface IgnoreField {
+    @interface Ignore {
     }
 
     /**
