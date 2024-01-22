@@ -1,4 +1,4 @@
-package io.github.manoelcampos.dtogen.sample;
+package io.github.manoelcampos.dtogen.sample.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

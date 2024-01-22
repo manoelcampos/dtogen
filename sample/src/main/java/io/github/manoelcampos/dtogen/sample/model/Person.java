@@ -1,4 +1,4 @@
-package io.github.manoelcampos.dtogen.sample;
+package io.github.manoelcampos.dtogen.sample.model;
 
 import io.github.manoelcampos.dtogen.DTO;
 import jakarta.validation.constraints.*;
