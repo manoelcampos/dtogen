@@ -1,4 +1,4 @@
-# Java autopmatic DTO Generation Library
+# Java automatic DTO Generation Library
 
 DTOGen is a Java 17+ library that automatically generates DTO [records](https://openjdk.org/jeps/395) from a given model class using `@DTO` annotations.
 The library relies on Annotation Processing to automatically create Java files containing the DTOs.
