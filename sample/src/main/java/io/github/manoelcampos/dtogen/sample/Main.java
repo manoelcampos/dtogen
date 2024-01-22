@@ -1,5 +1,14 @@
 package io.github.manoelcampos.dtogen.sample;
 
+/*
+ * DTOs are generated in the same package of the @DTO annotated classes (model classes).
+ * Here we are using the * wildcard to import all classes in the model package
+ * (which are annotated with @DTO), including the generated DTOs.
+ * That makes it easier to use the DTOs, since is less likely to get a compiler error
+ * saying that a given DTO you tried to use was not found.
+ * Check the README.md at the project's root dir for more details.
+*/
+
 import io.github.manoelcampos.dtogen.sample.model.Country;
 import io.github.manoelcampos.dtogen.sample.model.Person;
 import io.github.manoelcampos.dtogen.sample.model.PersonDTO;

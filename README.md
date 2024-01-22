@@ -18,6 +18,18 @@ If you have a Maven project, add the dependency below to your `<dependencies>` t
 </dependency>
 ```
 
+Then, elect the model classes you want to generate DTOs and annotate them with `@DTO`. 
+If you annotated a `Person` class, a `PersonDTO` record will be generated in the same package.
+
+**WARNING**: Don't try to use the generated DTO before performing a successfull build on the project (for instance, using `mvn clean package`). That is when the DTOs are generated. If you try to use them before that, the IDE may show an error saying the DTO doesn't exist.
+
+Finally, try to use the DTO record where you wish, include an import if necessary.
+Since DTOs are generated in the same package as the annotated classes, you can import them using the `*` wildcard.
+
+If you import the DTO individually, you may get a compiler error saying the DTO doesn't exist.
+Usually, you just need to build the project before trying to use any generated DTO,
+then run the project (even if the IDE is showing some erros), that it may work after all.
+
 That is the only configuration required. The annotation processing will be automatically performed when you build your project, generating the DTOs for model classes that are annotation with `@DTO`.
 
 ## 2. How to use
