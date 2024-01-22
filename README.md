@@ -1,8 +1,10 @@
 # Java automatic DTO Generation Library
 
-DTOGen is a Java 17+ library that automatically generates DTO [records](https://openjdk.org/jeps/395) from a given model class using `@DTO` annotations.
+DTOGen is a Java 17+ library that automatically generates DTO [records](https://openjdk.org/jeps/395) from a given model class using annotations. 
+It is a straightfoward library that requires no extra configuration to work: just add the dependency and include the `@DTO` annotation on desired model classes to see the magic of generating DTO records to happen. 
+
 The library relies on Annotation Processing to automatically create Java files containing the DTOs.
-Since it generates DTOs as Java records, they are immutable.
+Since it generates DTOs as Java records, they are [shallowly immutable](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Record.html).
 
 ## 1. Include the library in your project
 
