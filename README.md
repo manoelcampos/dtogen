@@ -18,7 +18,7 @@ If you have a Maven project, add the dependency below to your `<dependencies>` t
 </dependency>
 ```
 
-Then, elect the model classes you want to generate DTOs and annotate them with `@DTO`. 
+Then, annotate the model classes you want to generate DTOs with `@DTO`. 
 If you annotated a `Person` class, a `PersonDTO` record will be generated in the same package.
 
 **WARNING**: Don't try to use the generated DTO before performing a successfull build on the project (for instance, using `mvn clean package`). That is when the DTOs are generated. If you try to use them before that, the IDE may show an error saying the DTO doesn't exist.
