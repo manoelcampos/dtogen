@@ -1,0 +1,19 @@
+title: "DTOGen"
+description: "A Java 17+ annotation-based, validation-aware DTO generation library following DRY and avoiding boilerplate code."
+google_analytics:
+show_downloads: true
+theme: jekyll-theme-architect
+encoding: utf-8
+
+exclude:
+  - CONTRIBUTING.md
+  - .github
+  - .gitignore
+
+plugins:
+  - jekyll-mentions
+  - jemoji
+
+webrick:
+  headers:
+    keywords: "annotation,annotation-processor,annotation-processing,dto,java17,jdk17,dtogen"
