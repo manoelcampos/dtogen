@@ -141,7 +141,7 @@
                         <configuration>
                             <serverId>manoelcampos-ossrh</serverId>
                             <!-- URL for administration of deployed artifacts -->
-                            <nexusUrl>http://oss.sonatype.org</nexusUrl>
+                            <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
                             <!--If the artifact will be automatically released to maven central after the upload to sonatype.-->
                             <autoReleaseAfterClose>true</autoReleaseAfterClose>
                         </configuration>
