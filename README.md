@@ -1,4 +1,4 @@
-# Java automatic DTO Generation Library
+# Java automatic DTO Generation Library [![Maven Central](https://img.shields.io/maven-central/v/io.github.manoelcampos/dtogen.svg?label=Maven%20Central)](https://central.sonatype.com/search?q=dtogen&namespace=io.github.manoelcampos) [![javadoc](https://javadoc.io/badge2/io.github.manoelcampos/dtogen/javadoc.svg)](https://javadoc.io/doc/io.github.manoelcampos/dtogen)
 
 DTOGen is a Java 17+ library that automatically generates [Data Transfer Object](https://en.wikipedia.org/wiki/Data_transfer_object) (DTO) [records](https://openjdk.org/jeps/395) from a given model class using annotations. 
 It is a straightfoward library that requires no extra configuration to work: just add the dependency and include the `@DTO` annotation on desired model classes to see the magic of generating DTO records to happen. 
