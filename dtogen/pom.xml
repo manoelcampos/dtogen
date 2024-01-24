@@ -12,7 +12,7 @@
     <description>
         A Java 17+ annotation-based, validation-aware DTO generation library following DRY and avoiding boilerplate code.
     </description>
-    <url>https://github.com/manoelcampos/dtogen</url>
+    <url>https://manoelcampos.github.io/dtogen</url>
 
     <inceptionYear>2024</inceptionYear>
 
