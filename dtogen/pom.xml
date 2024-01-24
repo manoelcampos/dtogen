@@ -7,6 +7,7 @@
     <groupId>io.github.manoelcampos</groupId>
     <artifactId>dtogen</artifactId>
     <version>1.0.0</version>
+    <name>DTOGen</name>
 
     <description>
         A Java 17+ annotation-based, validation-aware DTO generation library following DRY and avoiding boilerplate code.
