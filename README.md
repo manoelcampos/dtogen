@@ -78,6 +78,7 @@ For more details, check the [sample project](sample).
 
 If you try to use a DTO such as the `PersonDTO` in the example above, and the IDE shows an error saying it doesn't exist, follow the steps below:
 
+1. ensure your code compiles after you use the `@DTO` annotations and before including any DTO record on your code;
 1. enable the "Annotation Processing" in the IDE settings (that is required if you are using IntelliJ IDEA: usually a notification is shown when you open the project that has the library included);
 2. make sure you have imported the DTO record in the class where you are using it, as described in the end of Section 2 above (if you try to import the DTO record directly, instead of using the `*` wildcard, the IDE may show an error saying the DTO doesn't exist, but follow the steps below that it usually works);
 3. build the project using, for instance, `mvn clean package` in the command line;
