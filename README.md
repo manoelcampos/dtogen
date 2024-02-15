@@ -1,9 +1,9 @@
 # Java automatic DTO Generation Library [![Build Status](https://github.com/manoelcampos/dtogen/actions/workflows/build.yml/badge.svg)](https://github.com/manoelcampos/dtogen/actions/workflows/build.yml) [![Maven Central](https://img.shields.io/maven-central/v/io.github.manoelcampos/dtogen.svg?label=Maven%20Central)](https://central.sonatype.com/search?q=dtogen&namespace=io.github.manoelcampos) [![javadoc](https://javadoc.io/badge2/io.github.manoelcampos/dtogen/javadoc.svg)](https://javadoc.io/doc/io.github.manoelcampos/dtogen)
 
 DTOGen is a Java 17+ library that automatically generates [Data Transfer Object](https://en.wikipedia.org/wiki/Data_transfer_object) (DTO) [records](https://openjdk.org/jeps/395) from a given model class using annotations. 
-It is a straightfoward library that requires no extra configuration to work: just add the dependency and include the `@DTO` annotation on desired model classes to see the magic of generating DTO records to happen. 
+It is a straightfoward library that requires no extra configuration to work: just add the dependency and include the `@DTO` annotation on desired model classes to see the magic of generating DTO records happening. 
 
-The library is validation-aware. It means that if you use [Lombok](http://projectlombok.org), [Hibernate Validator](https://hibernate.org/validator/) Annotations or other ones, they will be copied to the DTO fields. This way, validation will be performed on the DTO fields as well, so that you don't need to duplicated validation rules between the model class and the DTO.
+The library is validation-aware. It means that if you use [Lombok](http://projectlombok.org), [Hibernate Validator](https://hibernate.org/validator/) Annotations or other ones, they will be copied to the DTO fields. This way, validation will be performed on the DTO fields as well, so that you don't need to duplicate validation rules between the model class and the DTO.
 
 The library relies on Annotation Processing to automatically create Java files containing the DTOs.
 Since it generates DTOs as Java records, they are [shallowly immutable](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Record.html).
@@ -104,9 +104,10 @@ For more details, check the [sample project](sample).
 
 ## 3. Troubleshooting
 
-If you try to use a DTO such as the `PersonDTO` in the example above, and the IDE shows an error saying the DTO record doesn't exist, follow the steps below:
+If you try to use a DTO such as the `PersonDTO` in the example above, and the IDE shows an error saying it doesn't exist, follow the steps below:
 
-1. enable the "Annotation Processing" in the IDE settings (that is required if you are using IntelliJ IDEA: usually a notificatio is shown when you open the project that has the library included);
+1. ensure your code compiles after you use the `@DTO` annotations and before including any DTO record on your code;
+1. enable the "Annotation Processing" in the IDE settings (that is required if you are using IntelliJ IDEA: usually a notification is shown when you open the project that has the library included);
 2. make sure you have imported the DTO record in the class where you are using it, as described in the end of Section 2 above (if you try to import the DTO record directly, instead of using the `*` wildcard, the IDE may show an error saying the DTO doesn't exist, but follow the steps below that it usually works);
 3. build the project using, for instance, `mvn clean package` in the command line;
 4. after that, try to run the project (even if it is showing that the DTO records don't exist, usually after that they are generated and the code works).
