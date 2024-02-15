@@ -10,6 +10,8 @@ Since it generates DTOs as Java records, they are [shallowly immutable](https://
 
 ## 1. Include the library in your project
 
+### 1.1 Maven
+
 If you have a Maven project, add the dependency below to your `<dependencies>` tag in your `pom.xml`:
 
 ```xml
@@ -20,21 +22,20 @@ If you have a Maven project, add the dependency below to your `<dependencies>` t
 </dependency>
 ```
 
-Then, annotate the model classes you want to generate DTOs with `@DTO`. 
+## 2. How to use
+
+Now, annotate the model classes you want to generate DTOs with `@DTO`.
 If you annotated a `Person` class, a `PersonDTO` record will be generated in the same package.
 
 **WARNING**: Don't try to use the generated DTO before performing a successfull build on the project (for instance, using `mvn clean package`). That is when the DTOs are generated. If you try to use them before that, the IDE may show an error saying the DTO doesn't exist.
 
-Finally, try to use the DTO record where you wish, include an import if necessary.
-Since DTOs are generated in the same package as the annotated classes, you can import them using the `*` wildcard.
+Finally, use the DTO record where you wish, bu you may need to import the DTOs you are using. Since DTOs are generated in the same package as the annotated classes, you can import them using the `*` wildcard.
 
 If you import the DTO individually, you may get a compiler error saying the DTO doesn't exist.
 Usually, you just need to build the project before trying to use any generated DTO,
 then run the project (even if the IDE is showing some erros), that it may work after all.
 
-That is the only configuration required. The annotation processing will be automatically performed when you build your project, generating the DTOs for model classes that are annotation with `@DTO`.
-
-## 2. How to use
+The annotation processing will be automatically performed when you build your project, generating the DTOs for model classes that are annotation with `@DTO`.
 
 The example below shows a `Person` model class which uses the `@DTO` annotation to generate a `PersonDTO` record. This is the only annotation required to create a DTO. By default, the DTO record will have the same fields from the model class.
 
@@ -51,10 +52,22 @@ public class Person {
 }
 ```
 
-Then build your project using, for instance, `mvn clean package`.
-If the class where you are using the DTO is in another package, you have to import it as usual.
-Since the DTO record will be generated in the same package of the model class,
-the easiest way is to import the DTO record using the `*` wildcard.
+After that, build your project using, for instance, `mvn clean package`.
+That will generate the following `PersonDTO` record in the same package as the `Person` class:
+
+```java
+public record PersonDTO ( 
+    long id, 
+    @NotNull @NotBlank String name, 
+    @DecimalMin(value="0.1") @DecimalMax(value="200") double weightKg, 
+    @Min(value=5) @Max(value=50) int footSize,
+    String password,
+    Country country,  
+    Profession profession) 
+{
+    
+}
+```
 
 ### 2.1 Additional Options
 
@@ -70,6 +83,21 @@ private String password;
 
 @DTO.MapToId
 private Country country;
+```
+
+That will generate the following `PersonDTO` record:
+
+```java
+public record PersonDTO ( 
+    long id, 
+    @NotNull @NotBlank String name, 
+    @DecimalMin(value="0.1") @DecimalMax(value="200") double weightKg, 
+    @Min(value=5) @Max(value=50) int footSize,
+    @NotNull long countryId,  
+    Profession profession) 
+{
+    
+}
 ```
 
 For more details, check the [sample project](sample).
