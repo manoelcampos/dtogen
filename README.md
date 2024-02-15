@@ -18,8 +18,20 @@ If you have a Maven project, add the dependency below to your `<dependencies>` t
 <dependency>
     <groupId>io.github.manoelcampos</groupId>
     <artifactId>dtogen</artifactId>
+    <!-- Set a specific version or use the latest one -->
     <version>DTOGEN_VERSION_HERE</version>
 </dependency>
+```
+
+### 1.2 Gradle
+
+Add the following dependency into the build.gradle file of your Gradle project.
+
+```groovy
+dependencies {
+    //Set a specific version or use the latest one
+    implementation 'io.github.manoelcampos:dtogen:DTOGEN_VERSION_HERE'
+}
 ```
 
 ## 2. How to use
