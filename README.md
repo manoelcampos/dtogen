@@ -49,17 +49,27 @@ then run the project (even if the IDE is showing some erros), that it may work a
 
 The annotation processing will be automatically performed when you build your project, generating the DTOs for model classes that are annotation with `@DTO`.
 
-The example below shows a `Person` model class which uses the `@DTO` annotation to generate a `PersonDTO` record. This is the only annotation required to create a DTO. By default, the DTO record will have the same fields from the model class.
+The example below shows a `Person` model class which uses the `@DTO` annotation to generate a `PersonDTO` record. This is the only annotation required to create a DTO. By default, the DTO record will have the same fields from the model class. Other annotation such as `@NotNull` and `@NotBlank` are from Hibernate Validation and will be copied to the DTO fields. This way, you don't need to duplicate validation rules between the model class and the DTO.
 
 ```java
-@DTO 
+@DTO
 public class Person {
     private long id;
+
+    @NotNull @NotBlank
     private String name;
+
+    @DecimalMin("0.1") @DecimalMax("200")
     private double weightKg;
+
+    @Min(5) @Max(50)
     private int footSize;
+
+    @DTO.Exclude
     private String password;
+
     private Country country;
+
     private Profession profession;
 }
 ```
