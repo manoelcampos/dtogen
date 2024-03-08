@@ -11,7 +11,6 @@ package io.github.manoelcampos.dtogen.sample;
 
 import io.github.manoelcampos.dtogen.sample.model.Country;
 import io.github.manoelcampos.dtogen.sample.model.Person;
-import io.github.manoelcampos.dtogen.sample.model.PersonDTO;
 import io.github.manoelcampos.dtogen.sample.model.Profession;
 
 /**
