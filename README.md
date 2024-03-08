@@ -125,7 +125,11 @@ public record PersonDTO (
 ### 2.2 Working with Lombok
 
 If you are using [Lombok](http://projectlombok.org), some adicional configuration is needed to ensure Lombok is executed before DTOGen.
-For more details, check the [sample project pom.xml file](sample/pom.xml) .
+For more details, check the [sample project pom.xml file](sample/pom.xml).
+
+### 2.3 Spring Boot
+
+If you have a SpringBoot project, use the same configuration from the sample project, but don't exclude Lombok and DTOGen in the spring-boot-maven-plugin.
 
 ## 3. Troubleshooting
 
