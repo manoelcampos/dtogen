@@ -17,6 +17,7 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
@@ -119,23 +120,27 @@ public class DTOProcessor extends AbstractProcessor {
         return !field.getModifiers().contains(javax.lang.model.element.Modifier.STATIC);
     }
 
-    private String createDtoRecordField(final TypeElement classTypeElement, final VariableElement field) {
-        final var fieldAnnotationMirrors = field.getAnnotationMirrors();
-        final var fieldAnnotationsStr = getFieldAnnotationsStr(fieldAnnotationMirrors);
+    private String createDtoRecordField(final TypeElement classTypeElement, final VariableElement sourceField) {
+        final var fieldAnnotationMirrors = sourceField.getAnnotationMirrors();
+        final var fieldAnnotationsStr = getFieldAnnotationsStr(sourceField);
         if(fieldAnnotationMirrors.stream().anyMatch(mirror -> isAnnotationEqualTo(mirror, DTO.MapToId.class))){
-            final var fieldType = getClassTypeElement(field);
+            final var fieldType = getClassTypeElement(sourceField);
             final var msg = "Cannot find id field in %s. Since the %s.%s is annotated with %s, it must be a class with an id field."
-                              .formatted(fieldType.getSimpleName(), classTypeElement.getSimpleName(), field.getSimpleName(), getAnnotationName(DTO.MapToId.class));
+                              .formatted(fieldType.getSimpleName(), classTypeElement.getSimpleName(), sourceField.getSimpleName(), getAnnotationName(DTO.MapToId.class));
 
             return findIdField(fieldType)
-                    .map(idField -> String.format("%s %s %s", getFieldAnnotationsStr(idField.getAnnotationMirrors()), getFieldType(idField), field.getSimpleName() + "Id"))
+                    .map(idField -> formatIdField(sourceField, idField))
                     .orElseGet(() -> {
-                        processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, msg, field);
+                        processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, msg, sourceField);
                         return "";
                     });
         }
 
-        return String.format("%s %s %s", fieldAnnotationsStr, getFieldType(field), field.getSimpleName());
+        return String.format("%s %s %s", fieldAnnotationsStr, getFieldType(sourceField), sourceField.getSimpleName());
+    }
+
+    private String formatIdField(final VariableElement sourceField, final VariableElement idField) {
+        return String.format("%s %s %sId", getFieldAnnotationsStr(idField), getFieldType(idField), sourceField.getSimpleName());
     }
 
     /**
@@ -159,12 +164,39 @@ public class DTOProcessor extends AbstractProcessor {
         return annotationClassClass.getName().replaceAll("\\$", ".");
     }
 
-    private String getFieldAnnotationsStr(List<? extends AnnotationMirror> fieldAnnotationMirrors) {
-        return fieldAnnotationMirrors
+    /**
+     * Gets the string representation of the annotations of a field.
+     * @param field field to get the annotations from
+     * @return
+     */
+    private String getFieldAnnotationsStr(final VariableElement field) {
+        return field
+                .getAnnotationMirrors()
                 .stream()
                 .filter(this::isNotDTOGenAnnotation)
                 .map(this::getAnnotation)
+                .filter(Predicate.not(this::isDatabaseAnnotations))
+                .map(AnnotationData::toString)
                 .collect(joining(" "));
+    }
+
+    /**
+     * Check if an annotation is a JPA/Hibernation annotation
+     * that has only effect on database tables and should not be included in the DTO record.
+     * @param annotation the annotation to check
+     * @return true if the annotation is a JPA/Hibernation annotation, false otherwise.
+     */
+    private boolean isDatabaseAnnotations(final AnnotationData annotation) {
+        final var annotationNameList = List.of(
+            "jakarta.persistence.Id", "jakarta.persistence.GeneratedValue", "jakarta.persistence.Enumerated",
+            "jakarta.persistence.OneToMany", "jakarta.persistence.ManyToOne",
+            "jakarta.persistence.OneToOne", "jakarta.persistence.ManyToMany",
+            "jakarta.persistence.Column", "jakarta.persistence.Lob", "jakarta.persistence.Column",
+            "org.hibernate.annotations.JdbcTypeCode", "org.hibernate.annotations.ColumnDefault",
+            "javax.annotation.meta.When"
+        );
+
+        return annotationNameList.stream().anyMatch(annotation.name()::startsWith);
     }
 
     private Optional<VariableElement> findIdField(final TypeElement fieldType) {
@@ -188,14 +220,14 @@ public class DTOProcessor extends AbstractProcessor {
         return !mirror.getAnnotationType().toString().startsWith(this.getClass().getPackageName());
     }
 
-    private String getAnnotation(final AnnotationMirror mirror) {
+    private AnnotationData getAnnotation(final AnnotationMirror mirror) {
         final var annotationType = mirror.getAnnotationType().toString();
         final var annotationValues = ElementFilter.methodsIn(mirror.getElementValues().keySet())
                      .stream()
                      .map(element -> getAnnotationAttribute(mirror, element))
                      .collect(joining(", "));
 
-        return String.format("@%s(%s)", annotationType, annotationValues);
+        return new AnnotationData(annotationType, annotationValues);
     }
 
     private static String getAnnotationAttribute(final AnnotationMirror mirror, final ExecutableElement annotationAttributeElement) {
@@ -208,19 +240,38 @@ public class DTOProcessor extends AbstractProcessor {
     }
 
     private String getFieldType(final VariableElement fieldElement) {
-        return getSimpleTypeName(fieldElement);
+        return getTypeName(fieldElement).replaceAll("java\\.lang\\.", "");
     }
 
-    private String getSimpleTypeName(final VariableElement fieldElement) {
+    private String getTypeName(final VariableElement fieldElement) {
         final var typeMirror = fieldElement.asType();
         if (typeMirror.getKind().isPrimitive()) {
             return typeMirror.getKind().toString().toLowerCase();
         } else if (typeMirror instanceof DeclaredType declaredType) {
-            return declaredType.asElement().getSimpleName().toString();
+            final var element = (TypeElement) declaredType.asElement();
+
+
+            // Check if the type has generic parameters
+            final String typeArguments = genericTypeArguments(declaredType);
+
+
+            return element.getQualifiedName().toString() + typeArguments;
         }
 
         processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Unsupported type: " + typeMirror, fieldElement);
         return typeMirror.toString();
+    }
+
+    private String genericTypeArguments(final DeclaredType declaredType) {
+        final var typeArguments = declaredType.getTypeArguments();
+        if (typeArguments.isEmpty()) {
+            return "";
+        }
+
+        final var genericTypes = typeArguments.stream()
+                                              .map(TypeMirror::toString)
+                                              .collect(joining(", "));
+        return "<" + genericTypes + ">";
     }
 
     /**
