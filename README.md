@@ -133,3 +133,9 @@ If you try to use a DTO such as the `PersonDTO` in the example above, and the ID
 2. make sure you have imported the DTO record in the class where you are using it, as described in the end of Section 2 above (if you try to import the DTO record directly, instead of using the `*` wildcard, the IDE may show an error saying the DTO doesn't exist, but follow the steps below that it usually works);
 3. build the project using, for instance, `mvn clean package` in the command line;
 4. after that, try to run the project (even if it is showing that the DTO records don't exist, usually after that they are generated and the code works).
+
+## Known Issues
+
+If you try to open this entire repository on some IDEs such as IntelliJ,
+the sample project won't generate the DTOs.
+You must open just the sample project on the IDE for the annotation processing to work.
