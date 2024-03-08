@@ -9,9 +9,7 @@ package io.github.manoelcampos.dtogen.sample;
  * Check the README.md at the project's root dir for more details.
 */
 
-import io.github.manoelcampos.dtogen.sample.model.Country;
-import io.github.manoelcampos.dtogen.sample.model.Person;
-import io.github.manoelcampos.dtogen.sample.model.Profession;
+import io.github.manoelcampos.dtogen.sample.model.*;
 
 /**
  * @author Manoel Campos
