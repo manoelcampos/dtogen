@@ -15,13 +15,14 @@ import javax.tools.JavaFileObject;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.partitioningBy;
+import static java.util.stream.Collectors.*;
 
 /**
  * Processes dtogen annotations to dynamically generate DTO records.
@@ -32,6 +33,7 @@ import static java.util.stream.Collectors.partitioningBy;
 @SupportedSourceVersion(SourceVersion.RELEASE_17)
 @AutoService(Processor.class)
 public class DTOProcessor extends AbstractProcessor {
+    private static final String DTO_INTERFACE_NAME = "DTORecord";
     private Types typeUtils;
 
     @Override
@@ -48,6 +50,7 @@ public class DTOProcessor extends AbstractProcessor {
             final var annotatedElementsMap = annotatedElements.stream().collect(partitioningBy(el -> el.getKind().isClass()));
             //Gets only the classes annotated with @DTO
             final var classElements = annotatedElementsMap.get(true);
+            classElements.stream().findFirst().ifPresent(this::createDtoInterface);
             classElements.forEach(this::generateDtoRecord);
 
             showInvalidAnnotationLocation(annotation, annotatedElementsMap.get(false));
@@ -56,28 +59,103 @@ public class DTOProcessor extends AbstractProcessor {
         return true;
     }
 
+    private void createDtoInterface(final Element sourceClass) {
+        final var classElement = (TypeElement) sourceClass;
+        final var packageName = getPackageName(classElement);
+        final var dtoInterfaceCode =
+                """
+                package %s;
+                public interface %s<T> {
+                    T toModel();
+                }
+                """
+                .formatted(packageName, DTO_INTERFACE_NAME);
+        writeJavaFile(packageName, DTO_INTERFACE_NAME, dtoInterfaceCode);
+    }
+
     /**
      * Generate the DTO record file for the annotated class.
      * @param classElement element representing a class where the annotation was applied.
      */
     private void generateDtoRecord(final Element classElement) {
-        final var classTypeElement = (TypeElement) classElement;
-        final var packageName = getPackageName(classTypeElement);
-        final var dtoRecordName = classTypeElement.getSimpleName() + "DTO";
+        final var modelClassTypeElement = (TypeElement) classElement;
+        final var packageName = getPackageName(modelClassTypeElement);
+        final var modelClassName = modelClassTypeElement.getSimpleName().toString();
+        final var dtoRecordName = modelClassName + "DTO";
+
+        final var classFieldsList = getClassFields(modelClassTypeElement).toList();
+        final var sourceFieldAnnotationsMap =
+                classFieldsList
+                       .stream()
+                       .collect(toMap(Function.identity(), this::getFieldAnnotations));
+
+        final String fieldsStr = dtoFieldsStr(modelClassName, sourceFieldAnnotationsMap);
+        processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, dtoRecordName, classElement);
+
+        final var builder = new StringBuilder();
+        if(!packageName.isBlank())
+            builder.append("package %s;%n%n".formatted(packageName));
+
+        builder.append("public record %s (%s) implements %s<%s> {%n".formatted(dtoRecordName, fieldsStr, DTO_INTERFACE_NAME, modelClassName));
+        builder.append(generateToModelMethod(modelClassName, sourceFieldAnnotationsMap));
+        builder.append("}%n".formatted());
+
+        writeJavaFile(packageName, dtoRecordName, builder.toString());
+    }
+
+    private void writeJavaFile(final String packageName, final String dtoRecordName, final String classContent) {
         final JavaFileObject dtoFile = newJavaFileObject(packageName, dtoRecordName);
         if(dtoFile == null)
             return;
 
-        final String fields = dtoFields(classTypeElement);
-        processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, dtoRecordName, classElement);
         try (final var out = new PrintWriter(dtoFile.openWriter())) {
-            if(!packageName.isBlank())
-                out.printf("package %s;%n%n", packageName);
-
-            out.printf("public record %s (%s) {}%n", dtoRecordName, fields);
+            out.printf(classContent);
         } catch (final IOException e) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, e.getMessage(), classElement);
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, e.getMessage());
         }
+    }
+
+    private String generateToModelMethod(final String modelClassName, final Map<VariableElement, List<AnnotationData>> sourceFieldAnnotationsMap) {
+        final var code = """
+                             @Override
+                             public %s toModel(){
+                                 final var model = new %s();
+                         %s
+                                 return model;
+                             }
+                             
+                         """;
+
+        final var builder = new StringBuilder();
+        sourceFieldAnnotationsMap
+                .keySet()
+                .stream()
+                .map(this::generateSetterCall)
+                .forEach(builder::append);
+
+        return code.formatted(modelClassName, modelClassName, builder.toString());
+    }
+
+    private String generateSetterCall(final VariableElement sourceField) {
+        final var fieldType = getTypeName(sourceField);
+        final var sourceFieldName = sourceField.getSimpleName().toString();
+        final var sourceUpCaseFieldName = getUpCaseFieldName(sourceFieldName);
+        final boolean sourceFieldHasMapToId = hasFieldAnnotation(sourceField, DTO.MapToId.class);
+        final var modelSetter =
+                sourceFieldHasMapToId ?
+                    "model.get%s().setId".formatted(sourceUpCaseFieldName) :
+                    "model.set%s".formatted(sourceUpCaseFieldName);
+
+        // Instantiates an object of the type of the model field so that the id can be set
+        final var newFieldObj = sourceFieldHasMapToId ? "        model.set%s(new %s());%n".formatted(sourceUpCaseFieldName, fieldType) : "";
+
+        final var value = "%s%s".formatted(sourceFieldName, sourceFieldHasMapToId ? "Id" : "");
+        final var setField = "        %s(this.%s);%n".formatted(modelSetter, value);
+        return newFieldObj + setField;
+    }
+
+    private static String getUpCaseFieldName(final String fieldName) {
+        return fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
     }
 
     private static String getPackageName(final TypeElement classTypeElement) {
@@ -87,20 +165,25 @@ public class DTOProcessor extends AbstractProcessor {
 
     /**
      * {@return a string with the DTO record fields} It is based on the fields of the annotated class.
-     * @param classTypeElement element representing the class where the annotation was applied.
+     *
+     * @param modelClassName name of the model class
+     * @param sourceFieldAnnotationsMap map where each key is a field information and each value is the list of annotations of that field.
      */
-    private String dtoFields(final TypeElement classTypeElement) {
-        return getClassFields(classTypeElement)
-                        .filter(field -> field.getAnnotation(DTO.Exclude.class) == null)
-                        .map(field -> createDtoRecordField(classTypeElement, field))
-                        .collect(joining(", "));
+    private String dtoFieldsStr(final String modelClassName, final Map<VariableElement, List<AnnotationData>> sourceFieldAnnotationsMap) {
+        return sourceFieldAnnotationsMap
+                          .entrySet()
+                          .stream()
+                          .map(entry -> createDtoRecordField(modelClassName, entry.getKey(), entry.getValue()))
+                          .collect(joining(", "));
     }
 
     private Stream<VariableElement> getClassFields(final TypeElement classTypeElement) {
-        final var fieldStream = classTypeElement.getEnclosedElements().stream()
-                               .filter(enclosedElement -> enclosedElement.getKind().isField())
-                               .map(enclosedElement -> (VariableElement) enclosedElement)
-                               .filter(this::isInstanceField);
+        final var fieldStream =
+                classTypeElement.getEnclosedElements().stream()
+                                .filter(enclosedElement -> enclosedElement.getKind().isField())
+                                .map(enclosedElement -> (VariableElement) enclosedElement)
+                                .filter(this::isNotExcluded)
+                                .filter(this::isInstanceField);
 
         final var superclassType = classTypeElement.getSuperclass();
         final var superclassElement = (TypeElement) typeUtils.asElement(superclassType);
@@ -109,6 +192,10 @@ public class DTOProcessor extends AbstractProcessor {
                                         Stream.<VariableElement>empty();
 
         return Stream.concat(superClassFields, fieldStream);
+    }
+
+    private boolean isNotExcluded(final VariableElement field) {
+        return field.getAnnotation(DTO.Exclude.class) == null;
     }
 
     private static boolean hasSuperClass(final TypeMirror superclassType) {
@@ -120,27 +207,42 @@ public class DTOProcessor extends AbstractProcessor {
         return !field.getModifiers().contains(javax.lang.model.element.Modifier.STATIC);
     }
 
-    private String createDtoRecordField(final TypeElement classTypeElement, final VariableElement sourceField) {
-        final var fieldAnnotationMirrors = sourceField.getAnnotationMirrors();
-        final var fieldAnnotationsStr = getFieldAnnotationsStr(sourceField);
-        if(fieldAnnotationMirrors.stream().anyMatch(mirror -> isAnnotationEqualTo(mirror, DTO.MapToId.class))){
+    /**
+     *
+     * @param modelClassName name of the model class
+     * @param sourceField represents the field on the model class that will be created
+     *                    on the DTO record. Such an object enables getting field metadata.
+     * @param sourceFieldAnnotationData list of annotations on the field
+     * @return
+     */
+    private String createDtoRecordField(
+            final String modelClassName, final VariableElement sourceField,
+            final List<AnnotationData> sourceFieldAnnotationData)
+    {
+        final var sourceFieldAnnotationsStr = getFieldAnnotationsStr(sourceFieldAnnotationData);
+        final var annotationClass = DTO.MapToId.class;
+        if(hasFieldAnnotation(sourceField, annotationClass)){
             final var fieldType = getClassTypeElement(sourceField);
             final var msg = "Cannot find id field in %s. Since the %s.%s is annotated with %s, it must be a class with an id field."
-                              .formatted(fieldType.getSimpleName(), classTypeElement.getSimpleName(), sourceField.getSimpleName(), getAnnotationName(DTO.MapToId.class));
+                            .formatted(fieldType.getSimpleName(), modelClassName, sourceField.getSimpleName(), getAnnotationName(annotationClass));
 
             return findIdField(fieldType)
-                    .map(idField -> formatIdField(sourceField, idField))
+                    .map(idField -> formatIdField(sourceField, idField, sourceFieldAnnotationData))
                     .orElseGet(() -> {
                         processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, msg, sourceField);
                         return "";
                     });
         }
 
-        return String.format("%s %s %s", fieldAnnotationsStr, getFieldType(sourceField), sourceField.getSimpleName());
+        return String.format("%s %s %s", sourceFieldAnnotationsStr, getFieldType(sourceField), sourceField.getSimpleName());
     }
 
-    private String formatIdField(final VariableElement sourceField, final VariableElement idField) {
-        return String.format("%s %s %sId", getFieldAnnotationsStr(idField), getFieldType(idField), sourceField.getSimpleName());
+    private static boolean hasFieldAnnotation(final VariableElement sourceField, final Class<DTO.MapToId> annotationClass) {
+        return sourceField.getAnnotationMirrors().stream().anyMatch(mirror -> isAnnotationEqualTo(mirror, annotationClass));
+    }
+
+    private String formatIdField(final VariableElement sourceField, final VariableElement idField, final List<AnnotationData> sourceFieldAnnotationData) {
+        return String.format("%s %s %sId", getFieldAnnotationsStr(sourceFieldAnnotationData), getFieldType(idField), sourceField.getSimpleName());
     }
 
     /**
@@ -166,18 +268,30 @@ public class DTOProcessor extends AbstractProcessor {
 
     /**
      * Gets the string representation of the annotations of a field.
-     * @param field field to get the annotations from
+     *
+     * @param sourceFieldAnnotations
      * @return
      */
-    private String getFieldAnnotationsStr(final VariableElement field) {
+    private String getFieldAnnotationsStr(final List<AnnotationData> sourceFieldAnnotations) {
+        return sourceFieldAnnotations
+                .stream()
+                .map(AnnotationData::toString)
+                .collect(joining(" "));
+    }
+
+    /**
+     * Gets the annotations of a field.
+     * @param field the field to get its annotations
+     * @return
+     */
+    private List<AnnotationData> getFieldAnnotations(final VariableElement field) {
         return field
                 .getAnnotationMirrors()
                 .stream()
                 .filter(this::isNotDTOGenAnnotation)
                 .map(this::getAnnotation)
                 .filter(Predicate.not(this::isDatabaseAnnotations))
-                .map(AnnotationData::toString)
-                .collect(joining(" "));
+                .toList();
     }
 
     /**
