@@ -25,6 +25,8 @@ public class Main {
         System.out.println(person);
         System.out.println();
 
+        /* To make the DTO generation work on your IDE, you must open the sample project directly,
+         * instead o openning the entire repository. */
         final PersonDTO dto = new PersonDTO( 1, "Manoel Campos", 80, 42, country.getId(), profession);
         System.out.println(dto);
     }
