@@ -184,7 +184,10 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
                 <configuration>
-                    <!-- Disable annotation processing for ourselves. Avoids "Bad service configuration file, or exception thrown while constructing Processor object" -->
+                    <!--
+                    Disable annotation processing for ourselves.
+                    Avoids "Bad service configuration file, or exception thrown while constructing Processor object".
+                    -->
                     <compilerArgument>-proc:none</compilerArgument>
                     <showWarnings>true</showWarnings>
                 </configuration>
