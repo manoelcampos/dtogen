@@ -6,6 +6,8 @@ import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.*;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
@@ -94,10 +96,23 @@ public class DTOProcessor extends AbstractProcessor {
     }
 
     private Stream<VariableElement> getClassFields(final TypeElement classTypeElement) {
-        return classTypeElement.getEnclosedElements().stream()
+        final var fieldStream = classTypeElement.getEnclosedElements().stream()
                                .filter(enclosedElement -> enclosedElement.getKind().isField())
                                .map(enclosedElement -> (VariableElement) enclosedElement)
                                .filter(this::isInstanceField);
+
+        final var superclassType = classTypeElement.getSuperclass();
+        final var superclassElement = (TypeElement) typeUtils.asElement(superclassType);
+        final var superClassFields = hasSuperClass(superclassType) ?
+                                        getClassFields(superclassElement) :
+                                        Stream.<VariableElement>empty();
+
+        return Stream.concat(superClassFields, fieldStream);
+    }
+
+    private static boolean hasSuperClass(final TypeMirror superclassType) {
+        final var qualifiedClasname = ((TypeElement) ((DeclaredType) superclassType).asElement()).getQualifiedName().toString();
+        return superclassType.getKind() != TypeKind.NONE && !"java.lang.Object".equals(qualifiedClasname);
     }
 
     private boolean isInstanceField(final VariableElement field) {
