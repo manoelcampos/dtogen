@@ -143,6 +143,10 @@ If you try to use a DTO such as the `PersonDTO` in the example above, and the ID
 
 ## Known Issues
 
+### IntelliJ
+
 If you try to open this entire repository on some IDEs such as IntelliJ,
 the sample project won't generate the DTOs.
 You must open just the sample project on the IDE for the annotation processing to work.
+
+If you try to use some generated DTO, the IDE may show the DTO record doesn't exist, despite they are correctly generated in the target/generated-sources directory. If you face this issue, just press SHIFT+SHIFT on IntelliJ e type `Reload All Maven Projects` to reload the project settings.
