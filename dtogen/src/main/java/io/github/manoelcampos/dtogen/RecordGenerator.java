@@ -18,7 +18,7 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toMap;
 
 /**
- * Generates a {@link Record} java file.
+ * Generates a {@link Record} java file from a given model class.
  * @author Manoel Campos
  */
 public class RecordGenerator {
