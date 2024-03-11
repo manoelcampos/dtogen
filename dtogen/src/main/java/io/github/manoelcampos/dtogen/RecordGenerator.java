@@ -104,9 +104,41 @@ public class RecordGenerator {
         final String implementsClause = hasInterface() ? "implements %s<%s>".formatted(interfaceName, modelClassName) : "";
         builder.append("public record %s (%s) %s {%n".formatted(recordName, fieldsStr, implementsClause));
         builder.append(generateToModelMethod());
+        builder.append(generateFromModelMethod());
+        builder.append(defaultRecordConstrutor());
         builder.append("}%n".formatted());
 
         new JavaFileWriter(processor).write(modelPackageName, recordName, builder.toString());
+    }
+
+    private String defaultRecordConstrutor() {
+        final var builder = new StringBuilder("    public %s() {%n".formatted(recordName));
+        builder.append("        this(%n".formatted());
+        final String fieldValues = sourceFieldAnnotationsMap
+                .keySet()
+                .stream()
+                .map(this::generateFieldInitialization)
+                .collect(joining(",%n".formatted()));
+        builder.append(fieldValues);
+        builder.append("%n        );%n".formatted());
+        builder.append("    }%n".formatted());
+        return builder.toString();
+    }
+
+    private String generateFieldInitialization(final VariableElement sourceField) {
+        final var sourceFieldTypeName = getTypeName(sourceField);
+        final boolean hasMapToId = AnnotationData.contains(sourceField, DTO.MapToId.class);
+
+        final String value = switch (sourceFieldTypeName) {
+            case "String" -> "\"\"";
+            case "Long" -> "0L";
+            case "Integer", "Short", "Byte", "short", "byte", "Double", "double" -> "0";
+            case "Character", "char" -> "''";
+            case "Boolean", "boolean" -> "false";
+            default -> hasMapToId ? "0L" : "null";
+        };
+
+        return "          " + value;
     }
 
     /**
@@ -191,9 +223,8 @@ public class RecordGenerator {
     }
 
     /**
-     * Gets the class that represents the field type.
+     * {@return the class that represents the field type.}
      * @param fieldElement the element representing the field.
-     * @return
      */
     private TypeElement getClassTypeElement(final VariableElement fieldElement) {
         final var fieldTypeMirror = fieldElement.asType();
@@ -201,9 +232,8 @@ public class RecordGenerator {
     }
 
     /**
-     * Gets the annotations of a field.
+     * {@return the annotations of a field}
      * @param field the field to get its annotations
-     * @return
      */
     private List<AnnotationData> getFieldAnnotations(final VariableElement field) {
         return AnnotationData.getFieldAnnotations(field, annnotationPredicate);
@@ -228,24 +258,58 @@ public class RecordGenerator {
         sourceFieldAnnotationsMap
                 .keySet()
                 .stream()
-                .map(this::generateSetterCall)
+                .map(this::generateModelSetterCall)
                 .forEach(builder::append);
 
         return code.formatted(modelClassName, modelClassName, builder.toString());
     }
 
-    private String generateSetterCall(final VariableElement sourceField) {
+    private String generateFromModelMethod() {
+        final var code = """
+                             @Override
+                             public %1$s fromModel(final %2$s model){
+                                 final var dto = new %1$s(
+                         %3$s
+                                 );
+                                 return dto;
+                             }
+                             
+                         """;
+
+        final String dtoConstructorParamValues = sourceFieldAnnotationsMap
+                .keySet()
+                .stream()
+                .map(this::generateDtoConstructorParam)
+                .collect(joining(",%n".formatted()));
+
+        return code.formatted(recordName, modelClassName, dtoConstructorParamValues);
+    }
+
+    private String generateDtoConstructorParam(final VariableElement sourceField) {
+        final var sourceFieldName = sourceField.getSimpleName().toString();
+        final var upCaseSourceFieldName = ClassUtil.getUpCaseFieldName(sourceFieldName);
+        final boolean sourceFieldHasMapToId = AnnotationData.contains(sourceField, DTO.MapToId.class);
+
+        final var modelGetterName = "model.get%s()".formatted(upCaseSourceFieldName);
+        if(sourceFieldHasMapToId) {
+            return "          %1$s == null ? 0L : %1$s.getId()".formatted(modelGetterName);
+        }
+
+        return "          %s".formatted(modelGetterName);
+    }
+
+    private String generateModelSetterCall(final VariableElement sourceField) {
         final var fieldType = getTypeName(sourceField);
         final var sourceFieldName = sourceField.getSimpleName().toString();
-        final var sourceUpCaseFieldName = ClassUtil.getUpCaseFieldName(sourceFieldName);
+        final var upCaseSourceFieldName = ClassUtil.getUpCaseFieldName(sourceFieldName);
         final boolean sourceFieldHasMapToId = AnnotationData.contains(sourceField, DTO.MapToId.class);
         final var modelSetter =
                 sourceFieldHasMapToId ?
-                        "model.get%s().setId".formatted(sourceUpCaseFieldName) :
-                        "model.set%s".formatted(sourceUpCaseFieldName);
+                        "model.get%s().setId".formatted(upCaseSourceFieldName) :
+                        "model.set%s".formatted(upCaseSourceFieldName);
 
         // Instantiates an object of the type of the model field so that the id can be set
-        final var newFieldObj = sourceFieldHasMapToId ? "        model.set%s(new %s());%n".formatted(sourceUpCaseFieldName, fieldType) : "";
+        final var newFieldObj = sourceFieldHasMapToId ? "        model.set%s(new %s());%n".formatted(upCaseSourceFieldName, fieldType) : "";
 
         final var value = "%s%s".formatted(sourceFieldName, sourceFieldHasMapToId ? "Id" : "");
         final var setField = "        %s(this.%s);%n".formatted(modelSetter, value);

@@ -65,9 +65,10 @@ public class DTOProcessor extends AbstractProcessor {
         final var packageName = ClassUtil.getPackageName(classElement);
         final var dtoInterfaceCode =
                 """
-                package %s;
-                public interface %s<T> {
+                package %1$s;
+                public interface %2$s<T> {
                     T toModel();
+                    %2$s<T> fromModel(T model);
                 }
                 """
                 .formatted(packageName, DTO_INTERFACE_NAME);
@@ -89,7 +90,7 @@ public class DTOProcessor extends AbstractProcessor {
             "jakarta.persistence.OneToOne", "jakarta.persistence.ManyToMany",
             "jakarta.persistence.Column", "jakarta.persistence.Lob", "jakarta.persistence.Column",
             "org.hibernate.annotations.JdbcTypeCode", "org.hibernate.annotations.ColumnDefault",
-            "javax.annotation.meta.When"
+            "javax.annotation.meta.When", "lombok"
         );
 
         return annotationNameList.stream().anyMatch(annotation.name()::startsWith);
