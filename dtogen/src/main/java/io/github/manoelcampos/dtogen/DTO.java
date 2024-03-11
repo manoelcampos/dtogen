@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
  * @author Manoel Campos
  */
 @Target(ElementType.TYPE)
-@Retention(RetentionPolicy.SOURCE)
+@Retention(RetentionPolicy.RUNTIME)
 public @interface DTO {
     /**
      * Indicates that the annotated field must be excluded from the generated DTO.
