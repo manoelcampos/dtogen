@@ -90,7 +90,7 @@ public class DTOProcessor extends AbstractProcessor {
             "jakarta.persistence.OneToOne", "jakarta.persistence.ManyToMany",
             "jakarta.persistence.Column", "jakarta.persistence.Lob", "jakarta.persistence.Column",
             "org.hibernate.annotations.JdbcTypeCode", "org.hibernate.annotations.ColumnDefault",
-            "javax.annotation.meta.When", "lombok"
+            "javax.annotation.meta.When", "lombok", "JsonIgnore"
         );
 
         return annotationNameList.stream().anyMatch(annotation.name()::startsWith);
