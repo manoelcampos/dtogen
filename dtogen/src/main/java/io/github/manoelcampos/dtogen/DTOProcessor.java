@@ -93,7 +93,7 @@ public class DTOProcessor extends AbstractProcessor {
             "javax.annotation.meta.When", "lombok", "JsonIgnore"
         );
 
-        return annotationNameList.stream().anyMatch(annotation.name()::startsWith);
+        return annotationNameList.stream().anyMatch(annotation.name()::contains);
     }
 
     static boolean isNotFieldExcluded(final VariableElement field) {
