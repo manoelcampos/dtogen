@@ -6,10 +6,9 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import static io.github.manoelcampos.dtogen.AnnotationData.getFieldAnnotationsStr;
 import static io.github.manoelcampos.dtogen.ClassUtil.getClassFields;
@@ -35,8 +34,6 @@ public class RecordGenerator {
      */
     private final Element classElement;
 
-    private final TypeElement modelClassTypeElement;
-
     private final String modelPackageName;
     private final String modelClassName;
     private final String recordName;
@@ -53,6 +50,8 @@ public class RecordGenerator {
      */
     private final Predicate<VariableElement> sourceClassFieldPredicate;
     private final Map<VariableElement, List<AnnotationData>> sourceFieldAnnotationsMap;
+    private final Comparator<VariableElement> fieldNameComparator = Comparator.comparing(this::getFielName);
+
 
     public RecordGenerator(
         final DTOProcessor processor,
@@ -65,13 +64,13 @@ public class RecordGenerator {
         this.sourceClassFieldPredicate = sourceClassFieldPredicate;
         this.interfaceName = interfaceName;
         this.classElement = classElement;
-        this.modelClassTypeElement = (TypeElement) classElement;
+        final var modelClassTypeElement = (TypeElement) classElement;
         this.modelPackageName = ClassUtil.getPackageName(modelClassTypeElement);
         this.modelClassName = modelClassTypeElement.getSimpleName().toString();
         this.recordName = modelClassName + "DTO";
 
         final var classFieldsList = getClassFields(processor.typeUtils(), modelClassTypeElement, sourceClassFieldPredicate).toList();
-        this.sourceFieldAnnotationsMap = classFieldsList.stream().collect(toMap(identity(), this::getFieldAnnotations));
+        this.sourceFieldAnnotationsMap = classFieldsList.stream().collect(toMap(identity(), this::getFieldAnnotations, (a, b) -> a, () -> new TreeMap<>(fieldNameComparator)));
     }
 
     public RecordGenerator(
@@ -113,32 +112,40 @@ public class RecordGenerator {
 
     private String defaultRecordConstrutor() {
         final var builder = new StringBuilder("    public %s() {%n".formatted(recordName));
-        builder.append("        this(%n".formatted());
-        final String fieldValues = sourceFieldAnnotationsMap
-                .keySet()
-                .stream()
+        builder.append("        this(");
+
+        final String fieldValues =
+            sortedFieldStream()
                 .map(this::generateFieldInitialization)
-                .collect(joining(",%n".formatted()));
+                .collect(joining(", "));
+
         builder.append(fieldValues);
-        builder.append("%n        );%n".formatted());
+        builder.append(");%n".formatted());
         builder.append("    }%n".formatted());
         return builder.toString();
     }
 
+    private Stream<VariableElement> sortedFieldStream() {
+        return sourceFieldAnnotationsMap
+                .keySet()
+                .stream()
+                .sorted(fieldNameComparator);
+    }
+
     private String generateFieldInitialization(final VariableElement sourceField) {
-        final var sourceFieldTypeName = getTypeName(sourceField);
+        final var sourceFieldTypeName = getTypeName(sourceField, false);
         final boolean hasMapToId = AnnotationData.contains(sourceField, DTO.MapToId.class);
 
         final String value = switch (sourceFieldTypeName) {
             case "String" -> "\"\"";
             case "Long" -> "0L";
-            case "Integer", "Short", "Byte", "short", "byte", "Double", "double" -> "0";
+            case "Integer", "int", "Short", "short", "Byte", "byte", "Double", "double" -> "0";
             case "Character", "char" -> "''";
             case "Boolean", "boolean" -> "false";
             default -> hasMapToId ? "0L" : "null";
         };
 
-        return "          " + value;
+        return value;
     }
 
     /**
@@ -148,8 +155,13 @@ public class RecordGenerator {
         return sourceFieldAnnotationsMap
                 .entrySet()
                 .stream()
+                .sorted(Comparator.comparing(entry -> getFielName(entry.getKey())))
                 .map(entry -> createRecordField(entry.getKey(), entry.getValue()))
                 .collect(joining(", "));
+    }
+
+    private String getFielName(final VariableElement field) {
+        return field.getSimpleName().toString();
     }
 
     /**
@@ -197,6 +209,10 @@ public class RecordGenerator {
     }
 
     private String getTypeName(final VariableElement fieldElement) {
+        return getTypeName(fieldElement, true);
+    }
+
+    private String getTypeName(final VariableElement fieldElement, final boolean qualified) {
         final var typeMirror = fieldElement.asType();
         if (typeMirror.getKind().isPrimitive()) {
             return typeMirror.getKind().toString().toLowerCase();
@@ -205,7 +221,8 @@ public class RecordGenerator {
 
             // Check if the type has generic parameters
             final String typeArguments = genericTypeArguments(declaredType);
-            return element.getQualifiedName().toString() + typeArguments;
+            final var name = qualified ? element.getQualifiedName() : element.getSimpleName();
+            return name + typeArguments;
         }
 
         processor.processingEnv().getMessager().printMessage(Diagnostic.Kind.ERROR, "Unsupported type: " + typeMirror, fieldElement);
@@ -255,9 +272,7 @@ public class RecordGenerator {
                          """;
 
         final var builder = new StringBuilder();
-        sourceFieldAnnotationsMap
-                .keySet()
-                .stream()
+        sortedFieldStream()
                 .map(this::generateModelSetterCall)
                 .forEach(builder::append);
 
@@ -276,9 +291,8 @@ public class RecordGenerator {
                              
                          """;
 
-        final String dtoConstructorParamValues = sourceFieldAnnotationsMap
-                .keySet()
-                .stream()
+        final String dtoConstructorParamValues =
+            sortedFieldStream()
                 .map(this::generateDtoConstructorParam)
                 .collect(joining(",%n".formatted()));
 
