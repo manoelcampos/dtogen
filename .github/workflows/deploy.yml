@@ -1,0 +1,34 @@
+name: Publish package to the Maven Central Repository
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Maven Central Repository
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'adopt'
+          server-id: manoelcampos-ossrh
+          # ~/.m2/settings.xml
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          cache: 'maven'
+      - id: install-secret-key
+        name: Install gpg secret key
+        run: |
+          # The key to assing to OSSRH_GPG_SECRET_KEY can be got running on your PC: gpg -a --export-secret-keys KEY_ID
+          # The KEY_ID can be got from the GPG Keyhain.
+          # The OSSRH_GPG_SECRET_KEY_PASSWORD is in macOS keychain (GPG Key password)
+          # OSSRH_USERNAME and OSSRH_TOKEN (password) are available at ~/.m2/settings.xml 
+          cat <(echo -e "${{ secrets.OSSRH_GPG_SECRET_KEY }}") | gpg --batch --import
+          gpg --list-keys
+      - name: Publish package
+        run: mvn -f ./dtogen/pom.xml  --no-transfer-progress -Dgpg.passphrase=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }} --batch-mode -Psonatype deploy
+        env:
+          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
