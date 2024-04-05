@@ -18,7 +18,7 @@
         <dependency>
             <groupId>io.github.manoelcampos</groupId>
             <artifactId>dtogen</artifactId>
-            <version>1.0.7</version>
+            <version>1.0.9</version>
         </dependency>
 
         <dependency>
