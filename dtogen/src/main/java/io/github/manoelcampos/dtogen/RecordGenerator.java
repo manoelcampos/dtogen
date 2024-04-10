@@ -229,6 +229,12 @@ public class RecordGenerator {
         return typeMirror.toString();
     }
 
+    /**
+     * Gets the generic type arguments of a given type.
+     * If the type is {@code List<Customer>}, List is the declared type and Customer is the generic argument.
+     * @param declaredType the type to get its generic arguments
+     * @return a String representig all the generic type arguments in format {@code <Type1, TypeN>}
+     */
     private static String genericTypeArguments(final DeclaredType declaredType) {
         final var typeArguments = declaredType.getTypeArguments();
         if (typeArguments.isEmpty()) {
