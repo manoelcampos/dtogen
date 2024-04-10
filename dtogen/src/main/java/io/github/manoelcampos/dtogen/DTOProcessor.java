@@ -137,4 +137,13 @@ public class DTOProcessor extends AbstractProcessor {
     TypeElement getTypeMirrorAsElement(final TypeMirror genericType) {
         return (TypeElement) typeUtils().asElement(genericType);
     }
+
+    /**
+     * {@return the class that represents the field type.}
+     *
+     * @param fieldElement the element representing the field.
+     */
+    TypeElement getClassTypeElement(final VariableElement fieldElement) {
+        return getTypeMirrorAsElement(fieldElement.asType());
+    }
 }

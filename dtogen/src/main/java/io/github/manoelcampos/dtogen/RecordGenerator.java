@@ -177,7 +177,7 @@ public class RecordGenerator {
         final var sourceFieldAnnotationsStr = getFieldAnnotationsStr(sourceFieldAnnotationData);
         final var annotationClass = DTO.MapToId.class;
         if(AnnotationData.contains(sourceField, annotationClass)){
-            final var fieldType = getClassTypeElement(sourceField);
+            final var fieldType = processor.getClassTypeElement(sourceField);
             final var msg =
                     ID_FIELD_NOT_FOUND.formatted(
                         fieldType.getSimpleName(), modelClassName,
@@ -247,14 +247,6 @@ public class RecordGenerator {
 
     private TypeElement getTypeMirrorAsElement(final TypeMirror genericType) {
         return (TypeElement) processor.typeUtils().asElement(genericType);
-    }
-
-    /**
-     * {@return the class that represents the field type.}
-     * @param fieldElement the element representing the field.
-     */
-    private TypeElement getClassTypeElement(final VariableElement fieldElement) {
-        return getTypeMirrorAsElement(fieldElement.asType());
     }
 
     /**
