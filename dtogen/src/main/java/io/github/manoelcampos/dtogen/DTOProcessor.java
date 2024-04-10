@@ -76,7 +76,7 @@ public class DTOProcessor extends AbstractProcessor {
     }
 
     /**
-     * Annotations to be exclued from the DTO fields.
+     * Annotations to be excluded from the DTO fields.
      * Check if an annotation is DTO one or a JPA/Hibernation annotation
      * that has only effect on database tables and should not be included in the DTO record.
      * @param annotation the annotation to check
