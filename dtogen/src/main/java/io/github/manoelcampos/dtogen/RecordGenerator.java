@@ -245,13 +245,16 @@ public class RecordGenerator {
         return "<" + genericTypes + ">";
     }
 
+    private TypeElement getTypeMirrorAsElement(final TypeMirror genericType) {
+        return (TypeElement) processor.typeUtils().asElement(genericType);
+    }
+
     /**
      * {@return the class that represents the field type.}
      * @param fieldElement the element representing the field.
      */
     private TypeElement getClassTypeElement(final VariableElement fieldElement) {
-        final var fieldTypeMirror = fieldElement.asType();
-        return (TypeElement) processor.typeUtils().asElement(fieldTypeMirror);
+        return getTypeMirrorAsElement(fieldElement.asType());
     }
 
     /**
