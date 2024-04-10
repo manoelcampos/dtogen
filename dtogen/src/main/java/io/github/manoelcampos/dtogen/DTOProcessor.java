@@ -7,6 +7,7 @@ import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 import java.lang.annotation.Annotation;
@@ -131,5 +132,9 @@ public class DTOProcessor extends AbstractProcessor {
 
     Types typeUtils() {
         return typeUtils;
+    }
+
+    TypeElement getTypeMirrorAsElement(final TypeMirror genericType) {
+        return (TypeElement) typeUtils().asElement(genericType);
     }
 }
