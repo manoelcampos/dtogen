@@ -12,6 +12,7 @@ import java.util.stream.Stream;
 
 import static io.github.manoelcampos.dtogen.AnnotationData.getFieldAnnotationsStr;
 import static io.github.manoelcampos.dtogen.ClassUtil.getClassFields;
+import static io.github.manoelcampos.dtogen.DTOProcessor.hasAnnotation;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toMap;
@@ -230,6 +231,25 @@ public class RecordGenerator {
     }
 
     /**
+     * Checks if a field has a generic type argument annotated with {@link DTO}.
+     * @param fieldElement the field to check
+     * @return the first generic type (SomeType from a declaration such as {@code List<SomeType>})
+     * (the generic type argument) if the field is annotated with {@link DTO}; an empty string otherwise.
+     */
+    private String getFirstGenericTypeArgAnnotatedWithDTO(final VariableElement fieldElement) {
+        final var typeMirror = fieldElement.asType();
+        if (!(typeMirror instanceof DeclaredType declaredType)) {
+            return "";
+        }
+
+        if(declaredType.getTypeArguments().isEmpty())
+            return "";
+
+        final var firstTypeArg = processor.getTypeMirrorAsElement(declaredType.getTypeArguments().get(0));
+        return hasAnnotation(firstTypeArg, DTO.class) ? firstTypeArg.getSimpleName().toString() : "";
+    }
+
+    /**
      * Gets the generic type arguments of a given type.
      * If the type is {@code List<Customer>}, List is the declared type and Customer is the generic argument.
      * @param declaredType the type to get its generic arguments
@@ -249,9 +269,9 @@ public class RecordGenerator {
      * @see #genericTypeArguments(DeclaredType)
      */
     private String genericTypeArgument(final TypeMirror genericType) {
-        final var e = processor.getTypeMirrorAsElement(genericType);
+        final var genericTypeElement = processor.getTypeMirrorAsElement(genericType);
         processor.processingEnv().getMessager().printMessage(Diagnostic.Kind.NOTE, "Generic Type: " + genericType);
-        return e.getQualifiedName() + (DTOProcessor.hasAnnotation(e, DTO.class) ? DTO.class.getSimpleName() : "");
+        return genericTypeElement.getQualifiedName() + (hasAnnotation(genericTypeElement, DTO.class) ? DTO.class.getSimpleName() : "");
     }
 
     /**
@@ -319,8 +339,9 @@ public class RecordGenerator {
     }
 
     private String generateModelSetterCall(final VariableElement sourceField) {
+        final var builder = new StringBuilder();
         final var fieldType = getTypeName(sourceField);
-        final var sourceFieldName = sourceField.getSimpleName().toString();
+        final var sourceFieldName = getFielName(sourceField);
         final var upCaseSourceFieldName = ClassUtil.getUpCaseFieldName(sourceFieldName);
         final boolean sourceFieldHasMapToId = AnnotationData.contains(sourceField, DTO.MapToId.class);
         final var modelSetter =
@@ -330,9 +351,34 @@ public class RecordGenerator {
 
         // Instantiates an object of the type of the model field so that the id can be set
         final var newFieldObj = sourceFieldHasMapToId ? "        model.set%s(new %s());%n".formatted(upCaseSourceFieldName, fieldType) : "";
+        builder.append(newFieldObj);
 
-        final var value = "%s%s".formatted(sourceFieldName, sourceFieldHasMapToId ? "Id" : "");
+        final var value = getSetterValue(sourceField, sourceFieldHasMapToId);
         final var setField = "        %s(this.%s);%n".formatted(modelSetter, value);
-        return newFieldObj + setField;
+        builder.append(setField);
+
+        return builder.toString();
+    }
+
+    private String getSetterValue(final VariableElement sourceField, final boolean sourceFieldHasMapToId) {
+        final var sourceFieldName = getFielName(sourceField);
+        final var genericTypeArg = getFirstGenericTypeArgAnnotatedWithDTO(sourceField);
+        if (genericTypeArg.isBlank()) {
+            return "%s%s".formatted(sourceFieldName, sourceFieldHasMapToId ? "Id" : "");
+        }
+
+        return modelToDtoListMapper(sourceFieldName, genericTypeArg);
+    }
+
+    /**
+     * Generate the code to convert a list of Models to a list of DTOs
+     * when a Collection field (such as {@code List<@DTO Model> field})
+     * has a {@link DTO} annotation in the generic type argument (between the angle brackets).
+     * @param sourceFieldName the name of a Collection generic field
+     * @param genericTypeArg the generic type argument of the Collection field
+     * @return a Stream map operation to convert a list of Models to a list of DTOs
+     */
+    private static String modelToDtoListMapper(final String sourceFieldName, final String genericTypeArg) {
+        return "%s.stream().map(%s::toModel).toList()".formatted(sourceFieldName, genericTypeArg + DTO.class.getSimpleName());
     }
 }
