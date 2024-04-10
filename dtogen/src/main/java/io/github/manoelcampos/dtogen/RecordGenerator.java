@@ -235,18 +235,23 @@ public class RecordGenerator {
      * @param declaredType the type to get its generic arguments
      * @return a String representig all the generic type arguments in format {@code <Type1, TypeN>}
      */
-    private static String genericTypeArguments(final DeclaredType declaredType) {
+    private String genericTypeArguments(final DeclaredType declaredType) {
         final var typeArguments = declaredType.getTypeArguments();
         if (typeArguments.isEmpty()) {
             return "";
         }
 
-        final var genericTypes = typeArguments.stream().map(TypeMirror::toString).collect(joining(", "));
+        final var genericTypes = typeArguments.stream().map(this::genericTypeArgument).collect(joining(", "));
         return "<" + genericTypes + ">";
     }
 
-    private TypeElement getTypeMirrorAsElement(final TypeMirror genericType) {
-        return (TypeElement) processor.typeUtils().asElement(genericType);
+    /**
+     * @see #genericTypeArguments(DeclaredType)
+     */
+    private String genericTypeArgument(final TypeMirror genericType) {
+        final var e = processor.getTypeMirrorAsElement(genericType);
+        processor.processingEnv().getMessager().printMessage(Diagnostic.Kind.NOTE, "Generic Type: " + genericType);
+        return e.getQualifiedName() + (DTOProcessor.hasAnnotation(e, DTO.class) ? DTO.class.getSimpleName() : "");
     }
 
     /**
