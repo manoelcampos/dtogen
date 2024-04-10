@@ -9,6 +9,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
+import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -98,7 +99,20 @@ public class DTOProcessor extends AbstractProcessor {
     }
 
     static boolean isNotFieldExcluded(final VariableElement field) {
-        return field.getAnnotation(DTO.Exclude.class) == null;
+        return !hasAnnotation(field, DTO.Exclude.class);
+    }
+
+    /**
+     * Checks if a given {@link Element} (such as a {@link TypeElement} or {@link VariableElement})
+     * has a specific annotation.
+     * Generic types usually are the ones that accept annotations,
+     * such as {@code List<@NonNull String>}.
+     * @param element element to check
+     * @param annotation annotation to look for in the given element
+     * @return true if the annotation is present on the element, false otherwise
+     */
+    static boolean hasAnnotation(final Element element, final Class<? extends Annotation> annotation) {
+        return element.getAnnotation(annotation) != null;
     }
 
     /**
