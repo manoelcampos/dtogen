@@ -71,13 +71,16 @@ public class RecordGenerator {
         this.recordName = modelClassName + "DTO";
 
         final var classFieldsList = getClassFields(processor.typeUtils(), modelClassTypeElement, sourceClassFieldPredicate).toList();
-        this.sourceFieldAnnotationsMap = classFieldsList.stream().collect(toMap(identity(), this::getFieldAnnotations, (a, b) -> a, () -> new TreeMap<>(fieldNameComparator)));
+        this.sourceFieldAnnotationsMap =
+            classFieldsList
+                .stream()
+                .collect(toMap(identity(), this::getFieldAnnotations, (a, b) -> a, () -> new TreeMap<>(fieldNameComparator)));
     }
 
     public RecordGenerator(
-        final DTOProcessor processor,
-        final Element classElement, final Predicate<AnnotationData> annnotationPredicate,
-        final Predicate<VariableElement> sourceClassFieldPredicate)
+            final DTOProcessor processor,
+            final Element classElement, final Predicate<AnnotationData> annnotationPredicate,
+            final Predicate<VariableElement> sourceClassFieldPredicate)
     {
         this(processor, classElement, annnotationPredicate, sourceClassFieldPredicate, "");
     }
@@ -98,7 +101,7 @@ public class RecordGenerator {
         processor.processingEnv().getMessager().printMessage(Diagnostic.Kind.NOTE, recordName, classElement);
 
         final var builder = new StringBuilder();
-        if(!modelPackageName.isBlank())
+        if (!modelPackageName.isBlank())
             builder.append("package %s;%n%n".formatted(modelPackageName));
 
         final String implementsClause = hasInterface() ? "implements %s<%s>".formatted(interfaceName, modelClassName) : "";
@@ -177,7 +180,7 @@ public class RecordGenerator {
     {
         final var sourceFieldAnnotationsStr = getFieldAnnotationsStr(sourceFieldAnnotationData);
         final var annotationClass = DTO.MapToId.class;
-        if(AnnotationData.contains(sourceField, annotationClass)){
+        if (AnnotationData.contains(sourceField, annotationClass)) {
             final var fieldType = processor.getClassTypeElement(sourceField);
             final var msg =
                     ID_FIELD_NOT_FOUND.formatted(
@@ -247,7 +250,7 @@ public class RecordGenerator {
             return "";
         }
 
-        if(declaredType.getTypeArguments().isEmpty())
+        if (declaredType.getTypeArguments().isEmpty())
             return "";
 
         final var firstTypeArg = processor.getTypeMirrorAsElement(declaredType.getTypeArguments().get(0));
@@ -257,6 +260,7 @@ public class RecordGenerator {
     /**
      * Gets the generic type arguments of a given type.
      * If the type is {@code List<Customer>}, List is the declared type and Customer is the generic argument.
+     *
      * @param declaredType the type to get its generic arguments
      * @return a String representig all the generic type arguments in format {@code <Type1, TypeN>}
      */
@@ -286,7 +290,7 @@ public class RecordGenerator {
         return AnnotationData.getFieldAnnotations(field, annnotationPredicate);
     }
 
-    private boolean hasInterface(){
+    private boolean hasInterface() {
         return !interfaceName.isBlank();
     }
 
@@ -333,7 +337,7 @@ public class RecordGenerator {
         final boolean sourceFieldHasMapToId = AnnotationData.contains(sourceField, DTO.MapToId.class);
 
         final var modelGetterName = "model.get%s()".formatted(upCaseSourceFieldName);
-        if(sourceFieldHasMapToId) {
+        if (sourceFieldHasMapToId) {
             return "          %1$s == null ? 0L : %1$s.getId()".formatted(modelGetterName);
         }
 
@@ -370,7 +374,8 @@ public class RecordGenerator {
 
     /**
      * Generates the Java code representing the value to be passed to a setter method inside the {@link #generateToModelMethod()}.
-     * @param sourceField the field to generate the value to be passed to the setter method
+     *
+     * @param sourceField           the field to generate the value to be passed to the setter method
      * @param sourceFieldHasMapToId indicates if the field has the {@link DTO.MapToId} annotation.
      * @return the value to be passed to the setter method (as Java code)
      */
