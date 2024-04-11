@@ -294,7 +294,7 @@ public class RecordGenerator {
                          %s
                                  return model;
                              }
-                             
+                         
                          """;
 
         final var builder = new StringBuilder();
@@ -312,9 +312,10 @@ public class RecordGenerator {
                                  final var dto = new %1$s(
                          %3$s
                                  );
+                         
                                  return dto;
                              }
-                             
+                         
                          """;
 
         final String dtoConstructorParamValues =
@@ -335,7 +336,13 @@ public class RecordGenerator {
             return "          %1$s == null ? 0L : %1$s.getId()".formatted(modelGetterName);
         }
 
-        return "          %s".formatted(modelGetterName);
+        final var genericTypeArg = getFirstGenericTypeArgAnnotatedWithDTO(sourceField);
+        final var formattedGetter = "          %s".formatted(modelGetterName);
+
+        // Generates a stream chain to map a Model object to a DTO
+        final var dtoToModelMapper = ".stream().map(item -> new %s().fromModel(item)).toList()".formatted(genericTypeArg + DTO.class.getSimpleName());
+
+        return formattedGetter + (genericTypeArg.isBlank() ? "" : dtoToModelMapper);
     }
 
     private String generateModelSetterCall(final VariableElement sourceField) {
@@ -353,32 +360,27 @@ public class RecordGenerator {
         final var newFieldObj = sourceFieldHasMapToId ? "        model.set%s(new %s());%n".formatted(upCaseSourceFieldName, fieldType) : "";
         builder.append(newFieldObj);
 
-        final var value = getSetterValue(sourceField, sourceFieldHasMapToId);
+        final var value = setterValue(sourceField, sourceFieldHasMapToId);
         final var setField = "        %s(this.%s);%n".formatted(modelSetter, value);
         builder.append(setField);
 
         return builder.toString();
     }
 
-    private String getSetterValue(final VariableElement sourceField, final boolean sourceFieldHasMapToId) {
+    /**
+     * Generates the Java code representing the value to be passed to a setter method inside the {@link #generateToModelMethod()}.
+     * @param sourceField the field to generate the value to be passed to the setter method
+     * @param sourceFieldHasMapToId indicates if the field has the {@link DTO.MapToId} annotation.
+     * @return the value to be passed to the setter method (as Java code)
+     */
+    private String setterValue(final VariableElement sourceField, final boolean sourceFieldHasMapToId) {
         final var sourceFieldName = getFielName(sourceField);
         final var genericTypeArg = getFirstGenericTypeArgAnnotatedWithDTO(sourceField);
         if (genericTypeArg.isBlank()) {
             return "%s%s".formatted(sourceFieldName, sourceFieldHasMapToId ? "Id" : "");
         }
 
-        return modelToDtoListMapper(sourceFieldName, genericTypeArg);
-    }
-
-    /**
-     * Generate the code to convert a list of Models to a list of DTOs
-     * when a Collection field (such as {@code List<@DTO Model> field})
-     * has a {@link DTO} annotation in the generic type argument (between the angle brackets).
-     * @param sourceFieldName the name of a Collection generic field
-     * @param genericTypeArg the generic type argument of the Collection field
-     * @return a Stream map operation to convert a list of Models to a list of DTOs
-     */
-    private static String modelToDtoListMapper(final String sourceFieldName, final String genericTypeArg) {
+        // Generates a stream chain to map a DTO object to a Model
         return "%s.stream().map(%s::toModel).toList()".formatted(sourceFieldName, genericTypeArg + DTO.class.getSimpleName());
     }
 }
