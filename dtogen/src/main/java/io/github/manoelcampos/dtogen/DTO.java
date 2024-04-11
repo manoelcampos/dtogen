@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
  * Creates a record representing a Data Type Object (DTO) for the annotated class.
  * @author Manoel Campos
  */
-@Target({ElementType.TYPE, ElementType.TYPE_USE})
+@Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface DTO {
     /**

@@ -157,7 +157,7 @@ public class RecordGenerator {
                 .entrySet()
                 .stream()
                 .sorted(Comparator.comparing(entry -> getFielName(entry.getKey())))
-                .map(entry -> createRecordField(entry.getKey(), entry.getValue()))
+                .map(entry -> generateRecordField(entry.getKey(), entry.getValue()))
                 .collect(joining(", "));
     }
 
@@ -171,7 +171,7 @@ public class RecordGenerator {
      * @param sourceFieldAnnotationData list of annotations on the field
      * @return
      */
-    private String createRecordField(
+    private String generateRecordField(
             final VariableElement sourceField,
             final List<AnnotationData> sourceFieldAnnotationData)
     {
@@ -231,10 +231,15 @@ public class RecordGenerator {
     }
 
     /**
-     * Checks if a field has a generic type argument annotated with {@link DTO}.
+     * Checks if a field has a generic type argument annotated with {@link DTO}
+     * in order to generate that field in using the DTO record instead of the Model class.
+     * Consider we have a DTO record MainDTO that has a field of type {@code List<ModelClass>}.
+     * if ModelClass is created with the {@link DTO} annotation, its related field in MainDTO
+     * will be {@code List<ModelClassDTO>} instead of {@code List<ModelClass>}.
+     *
      * @param fieldElement the field to check
-     * @return the first generic type (SomeType from a declaration such as {@code List<SomeType>})
-     * (the generic type argument) if the field is annotated with {@link DTO}; an empty string otherwise.
+     * @return the first generic type (ModelClass from a declaration such as {@code List<ModelClass>})
+     * (the generic type argument) if ModelClass is annotated with {@link DTO}; an empty string otherwise.
      */
     private String getFirstGenericTypeArgAnnotatedWithDTO(final VariableElement fieldElement) {
         final var typeMirror = fieldElement.asType();
@@ -270,7 +275,6 @@ public class RecordGenerator {
      */
     private String genericTypeArgument(final TypeMirror genericType) {
         final var genericTypeElement = processor.getTypeMirrorAsElement(genericType);
-        processor.processingEnv().getMessager().printMessage(Diagnostic.Kind.NOTE, "Generic Type: " + genericType);
         return genericTypeElement.getQualifiedName() + (hasAnnotation(genericTypeElement, DTO.class) ? DTO.class.getSimpleName() : "");
     }
 
@@ -306,27 +310,24 @@ public class RecordGenerator {
     }
 
     private String generateFromModelMethod() {
-        final var code = """
-                             @Override
-                             public %1$s fromModel(final %2$s model){
-                                 final var dto = new %1$s(
-                         %3$s
-                                 );
-                         
-                                 return dto;
-                             }
-                         
-                         """;
+        final var methodCode =
+             """
+                 @Override
+                 public %1$s fromModel(final %2$s model){
+                     final var dto = new %1$s(
+             %3$s
+                     );
+             
+                     return dto;
+                 }
+             
+             """;
 
-        final String dtoConstructorParamValues =
-            sortedFieldStream()
-                .map(this::generateDtoConstructorParam)
-                .collect(joining(",%n".formatted()));
-
-        return code.formatted(recordName, modelClassName, dtoConstructorParamValues);
+        final var constructorValues = sortedFieldStream().map(this::dtoConstructorParam).collect(joining(",%n".formatted()));
+        return methodCode.formatted(recordName, modelClassName, constructorValues);
     }
 
-    private String generateDtoConstructorParam(final VariableElement sourceField) {
+    private String dtoConstructorParam(final VariableElement sourceField) {
         final var sourceFieldName = sourceField.getSimpleName().toString();
         final var upCaseSourceFieldName = ClassUtil.getUpCaseFieldName(sourceFieldName);
         final boolean sourceFieldHasMapToId = AnnotationData.contains(sourceField, DTO.MapToId.class);
