@@ -1,6 +1,5 @@
 package io.github.manoelcampos.dtogen;
 
-import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -13,6 +12,7 @@ import java.util.stream.Stream;
 
 import static io.github.manoelcampos.dtogen.AnnotationData.getFieldAnnotationsStr;
 import static io.github.manoelcampos.dtogen.ClassUtil.getClassFields;
+import static io.github.manoelcampos.dtogen.DTOProcessor.hasAnnotation;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toMap;
@@ -245,62 +245,41 @@ public class RecordGenerator {
      * (the generic type argument) if ModelClass is annotated with {@link DTO}; an empty string otherwise.
      */
     private String getFirstGenericTypeArgAnnotatedWithDTO(final VariableElement fieldElement) {
-        final var isGenericTypeArgAnnotatedWithDto = isFirstGenericTypeArgAnnotatedWithDTO(fieldElement);
-        if (!isGenericTypeArgAnnotatedWithDto)
-            return "";
-
-        final var declaredType = (DeclaredType) fieldElement.asType();
-        final var firstTypeArgElement = processor.getTypeMirrorAsElement(declaredType.getTypeArguments().get(0));
-        return firstTypeArgElement.getSimpleName().toString();
-    }
-
-    private boolean isFirstGenericTypeArgAnnotatedWithDTO(final VariableElement fieldElement) {
         final var typeMirror = fieldElement.asType();
         if (!(typeMirror instanceof DeclaredType declaredType)) {
-            return false;
+            return "";
         }
 
-        return isFirstGenericTypeArgAnnotatedWithDTO(declaredType);
-    }
+        if (declaredType.getTypeArguments().isEmpty())
+            return "";
 
-    private boolean isFirstGenericTypeArgAnnotatedWithDTO(final DeclaredType fieldElement) {
-        if (fieldElement.getTypeArguments().isEmpty())
-            return false;
-
-        final var firstTypeArg = fieldElement.getTypeArguments().get(0);
-        return firstTypeArg
-                .getAnnotationMirrors()
-                .stream()
-                .map(AnnotationMirror::getAnnotationType)
-                .map(DeclaredType::toString)
-                .anyMatch(annotationType -> annotationType.endsWith(DTO.class.getName()));
+        final var firstTypeArg = processor.getTypeMirrorAsElement(declaredType.getTypeArguments().get(0));
+        return hasAnnotation(firstTypeArg, DTO.class) ? firstTypeArg.getSimpleName().toString() : "";
     }
 
     /**
      * Gets the generic type arguments of a given type.
      * If the type is {@code List<Customer>}, List is the declared type and Customer is the generic argument.
      *
-     * @param fieldDeclaredType the field to get its generic arguments
-     * @return a String representing all the generic type arguments in format {@code <Type1, TypeN>}
+     * @param declaredType the type to get its generic arguments
+     * @return a String representig all the generic type arguments in format {@code <Type1, TypeN>}
      */
-    private String genericTypeArguments(final DeclaredType fieldDeclaredType) {
-        final var typeArguments = fieldDeclaredType.getTypeArguments();
+    private String genericTypeArguments(final DeclaredType declaredType) {
+        final var typeArguments = declaredType.getTypeArguments();
         if (typeArguments.isEmpty()) {
             return "";
         }
 
-        final var genericTypes = typeArguments.stream().map(type -> genericTypeArgument(fieldDeclaredType, type)).collect(joining(", "));
+        final var genericTypes = typeArguments.stream().map(this::genericTypeArgument).collect(joining(", "));
         return "<" + genericTypes + ">";
     }
 
     /**
-     * @param fieldDeclaredType the field to get a generic type argument
-     * @param genericType the generic type argument
      * @see #genericTypeArguments(DeclaredType)
      */
-    private String genericTypeArgument(final DeclaredType fieldDeclaredType, final TypeMirror genericType) {
+    private String genericTypeArgument(final TypeMirror genericType) {
         final var genericTypeElement = processor.getTypeMirrorAsElement(genericType);
-        return genericTypeElement.getQualifiedName() + (isFirstGenericTypeArgAnnotatedWithDTO(fieldDeclaredType) ? DTO.class.getSimpleName() : "");
+        return genericTypeElement.getQualifiedName() + (hasAnnotation(genericTypeElement, DTO.class) ? DTO.class.getSimpleName() : "");
     }
 
     /**
