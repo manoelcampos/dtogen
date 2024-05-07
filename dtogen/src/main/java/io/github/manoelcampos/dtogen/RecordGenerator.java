@@ -71,10 +71,12 @@ public class RecordGenerator {
         this.recordName = modelClassName + "DTO";
 
         final var classFieldsList = getClassFields(processor.typeUtils(), modelClassTypeElement, sourceClassFieldPredicate).toList();
+
+        // Creates a LinkedHashMap to ensure the fields are collected in the same order they are encountered in the class
         this.sourceFieldAnnotationsMap =
             classFieldsList
                 .stream()
-                .collect(toMap(identity(), this::getFieldAnnotations, (a, b) -> a, () -> new TreeMap<>(fieldNameComparator)));
+                .collect(toMap(identity(), this::getFieldAnnotations, (a, b) -> a, LinkedHashMap::new));
     }
 
     public RecordGenerator(
@@ -119,7 +121,7 @@ public class RecordGenerator {
         builder.append("        this(");
 
         final String fieldValues =
-            sortedFieldStream()
+            fieldStream()
                 .map(this::generateFieldInitialization)
                 .collect(joining(", "));
 
@@ -129,37 +131,36 @@ public class RecordGenerator {
         return builder.toString();
     }
 
-    private Stream<VariableElement> sortedFieldStream() {
-        return sourceFieldAnnotationsMap
-                .keySet()
-                .stream()
-                .sorted(fieldNameComparator);
+    /**
+     * {@return  a stream of the fields of the model class being processed}
+     * It doesn't sort elements to ensure the fields are returned in the same order they are declared in the class.
+     */
+    private Stream<VariableElement> fieldStream() {
+        return sourceFieldAnnotationsMap.keySet().stream();
     }
 
     private String generateFieldInitialization(final VariableElement sourceField) {
         final var sourceFieldTypeName = getTypeName(sourceField, false);
         final boolean hasMapToId = AnnotationData.contains(sourceField, DTO.MapToId.class);
 
-        final String value = switch (sourceFieldTypeName) {
+        return switch (sourceFieldTypeName) {
             case "String" -> "\"\"";
             case "Long" -> "0L";
-            case "Integer", "int", "Short", "short", "Byte", "byte", "Double", "double" -> "0";
+            case "Integer", "int",  "long", "Short", "short", "Byte", "byte", "Double", "double" -> "0";
             case "Character", "char" -> "''";
             case "Boolean", "boolean" -> "false";
             default -> hasMapToId ? "0L" : "null";
         };
-
-        return value;
     }
 
     /**
-     * {@return a string with the DTO record fields} It is based on the fields of the annotated class.
+     * {@return a string with the DTO record fields, based on the fields of the model class being processed}
+     * It doesn't sort elements to ensure the fields are returned in the same order they are declared in the class.
      */
     private String recordFieldsStr() {
         return sourceFieldAnnotationsMap
                 .entrySet()
                 .stream()
-                .sorted(Comparator.comparing(entry -> getFielName(entry.getKey())))
                 .map(entry -> generateRecordField(entry.getKey(), entry.getValue()))
                 .collect(joining(", "));
     }
@@ -306,7 +307,7 @@ public class RecordGenerator {
                          """;
 
         final var builder = new StringBuilder();
-        sortedFieldStream()
+        fieldStream()
                 .map(this::generateModelSetterCall)
                 .forEach(builder::append);
 
@@ -327,7 +328,7 @@ public class RecordGenerator {
              
              """;
 
-        final var constructorValues = sortedFieldStream().map(this::dtoConstructorParam).collect(joining(",%n".formatted()));
+        final var constructorValues = fieldStream().map(this::dtoConstructorParam).collect(joining(",%n".formatted()));
         return methodCode.formatted(recordName, modelClassName, constructorValues);
     }
 

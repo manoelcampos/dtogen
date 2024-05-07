@@ -12,13 +12,15 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <dtogen.version>1.1.2</dtogen.version>
+        <lombok.version>1.18.30</lombok.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>io.github.manoelcampos</groupId>
             <artifactId>dtogen</artifactId>
-            <version>1.0.9</version>
+            <version>${dtogen.version}</version>
         </dependency>
 
         <dependency>
@@ -26,7 +28,7 @@
              autogenerating getters, setters and toString. -->
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.30</version>
+            <version>${lombok.version}</version>
             <scope>provided</scope>
         </dependency>
 
@@ -73,12 +75,12 @@
                     <dependency>
                         <groupId>org.projectlombok</groupId>
                         <artifactId>lombok</artifactId>
-                        <version>1.18.30</version>
+                        <version>${lombok.version}</version>
                     </dependency>
                     <dependency>
                         <groupId>io.github.manoelcampos</groupId>
                         <artifactId>dtogen</artifactId>
-                        <version>1.0.1</version>
+                        <version>${dtogen.version}</version>
                     </dependency>
                 </dependencies>
             </plugin>

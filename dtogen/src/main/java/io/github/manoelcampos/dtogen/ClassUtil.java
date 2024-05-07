@@ -34,7 +34,8 @@ public final class ClassUtil {
     }
 
     /**
-     *
+     * Gets the fields of a given class, including the ones from its superclasses.
+     * It doesn't sort elements to ensure the fields are returned in the same order they are declared in the class.
      * @param typeUtils
      * @param classTypeElement
      * @param fieldPredicate a predicate to indicate how to select class fields

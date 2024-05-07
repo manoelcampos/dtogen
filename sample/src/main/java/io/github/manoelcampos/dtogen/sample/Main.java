@@ -12,6 +12,7 @@ package io.github.manoelcampos.dtogen.sample;
 import io.github.manoelcampos.dtogen.sample.model.*;
 
 /**
+ * Sample class to demonstrate the utilization of the generated DTOs.
  * @author Manoel Campos
  */
 public class Main {
@@ -24,7 +25,7 @@ public class Main {
 
         /* To make the DTO generation work on your IDE, you must open the sample project directly,
          * instead o openning the entire repository. */
-        final PersonDTO dto = new PersonDTO( 1, "Manoel Campos", 80, 42, country.getId(), profession);
+        final PersonDTO dto = new PersonDTO(0,  "Manoel Campos", 80, 42, country.getId(), profession);
         System.out.println(dto);
     }
 }
