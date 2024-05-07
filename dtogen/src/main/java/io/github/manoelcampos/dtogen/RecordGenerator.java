@@ -51,7 +51,7 @@ public class RecordGenerator {
      */
     private final Predicate<VariableElement> sourceClassFieldPredicate;
     private final Map<VariableElement, List<AnnotationData>> sourceFieldAnnotationsMap;
-    private final Comparator<VariableElement> fieldNameComparator = Comparator.comparing(this::getFielName);
+    private final Comparator<VariableElement> fieldNameComparator = Comparator.comparing(this::getFieldName);
 
 
     public RecordGenerator(
@@ -165,7 +165,7 @@ public class RecordGenerator {
                 .collect(joining(", "));
     }
 
-    private String getFielName(final VariableElement field) {
+    private String getFieldName(final VariableElement field) {
         return field.getSimpleName().toString();
     }
 
@@ -354,7 +354,7 @@ public class RecordGenerator {
     private String generateModelSetterCall(final VariableElement sourceField) {
         final var builder = new StringBuilder();
         final var fieldType = getTypeName(sourceField);
-        final var sourceFieldName = getFielName(sourceField);
+        final var sourceFieldName = getFieldName(sourceField);
         final var upCaseSourceFieldName = ClassUtil.getUpCaseFieldName(sourceFieldName);
         final boolean sourceFieldHasMapToId = AnnotationData.contains(sourceField, DTO.MapToId.class);
         final var modelSetter =
@@ -381,7 +381,7 @@ public class RecordGenerator {
      * @return the value to be passed to the setter method (as Java code)
      */
     private String setterValue(final VariableElement sourceField, final boolean sourceFieldHasMapToId) {
-        final var sourceFieldName = getFielName(sourceField);
+        final var sourceFieldName = getFieldName(sourceField);
         final var genericTypeArg = getFirstGenericTypeArgAnnotatedWithDTO(sourceField);
         if (genericTypeArg.isBlank()) {
             return "%s%s".formatted(sourceFieldName, sourceFieldHasMapToId ? "Id" : "");
