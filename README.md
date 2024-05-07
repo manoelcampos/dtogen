@@ -3,7 +3,7 @@
 DTOGen is a Java 17+ library that automatically generates [Data Transfer Object](https://en.wikipedia.org/wiki/Data_transfer_object) (DTO) [records](https://openjdk.org/jeps/395) from a given model class using annotations. 
 It is a straightfoward library that requires no extra configuration to work: just add the dependency and include the `@DTO` annotation on desired model classes to see the magic of generating DTO records happening. 
 
-The library is validation-aware. It means that if you use [Lombok](http://projectlombok.org), [Hibernate Validator](https://hibernate.org/validator/) Annotations or other ones, they will be copied to the DTO fields. This way, validation will be performed on the DTO fields as well, so that you don't need to duplicate validation rules between the model class and the DTO.
+The library is type-safe and validation-aware. It means that if you use [Lombok](http://projectlombok.org), [Hibernate Validator](https://hibernate.org/validator/) Annotations or other ones, they will be copied to the DTO fields. This way, validation will be performed on the DTO fields as well, so that you don't need to duplicate validation rules between the model class and the DTO.
 
 The library relies on Annotation Processing to automatically create Java files containing the DTOs.
 Since it generates DTOs as Java records, they are [shallowly immutable](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Record.html).
