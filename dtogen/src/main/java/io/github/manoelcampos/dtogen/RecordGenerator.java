@@ -100,8 +100,6 @@ public class RecordGenerator {
      */
     public void generate() {
         final String fieldsStr = recordFieldsStr();
-        processor.processingEnv().getMessager().printMessage(Diagnostic.Kind.NOTE, recordName, classElement);
-
         final var builder = new StringBuilder();
         if (!modelPackageName.isBlank())
             builder.append("package %s;%n%n".formatted(modelPackageName));
