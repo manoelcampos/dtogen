@@ -27,6 +27,19 @@ import static java.util.stream.Collectors.partitioningBy;
 @AutoService(Processor.class)
 public class DTOProcessor extends AbstractProcessor {
     private static final String DTO_INTERFACE_NAME = "DTORecord";
+
+    private final List<String> excludedAnnotationNameList = List.of(
+            DTOProcessor.class.getPackageName(),
+            "jakarta.persistence.Id", "jakarta.persistence.GeneratedValue", "jakarta.persistence.Enumerated",
+            "jakarta.persistence.OneToMany", "jakarta.persistence.ManyToOne",
+            "jakarta.persistence.OneToOne", "jakarta.persistence.ManyToMany",
+            "jakarta.persistence.JoinColumn",
+            "jakarta.persistence.Column", "jakarta.persistence.Lob", "jakarta.persistence.Column",
+            "org.hibernate.annotations.",
+            "javax.annotation.meta.When", "lombok", "JsonIgnore",
+            DTO.class.getName()
+    );
+
     private Types typeUtils;
     private JavaFileWriter javaFileWriter;
 
@@ -79,25 +92,13 @@ public class DTOProcessor extends AbstractProcessor {
 
     /**
      * Annotations to be excluded from the DTO fields.
-     * Check if an annotation is DTO one or a JPA/Hibernation annotation
+     * Check if an annotation is a DTO one or a JPA/Hibernation annotation
      * that has only effect on database tables and should not be included in the DTO record.
      * @param annotation the annotation to check
      * @return true if the annotation is a JPA/Hibernation annotation, false otherwise.
      */
     private boolean isExcludedAnnotation(final AnnotationData annotation) {
-        final var annotationNameList = List.of(
-            DTOProcessor.class.getPackageName(),
-            "jakarta.persistence.Id", "jakarta.persistence.GeneratedValue", "jakarta.persistence.Enumerated",
-            "jakarta.persistence.OneToMany", "jakarta.persistence.ManyToOne",
-            "jakarta.persistence.OneToOne", "jakarta.persistence.ManyToMany",
-            "jakarta.persistence.JoinColumn",
-            "jakarta.persistence.Column", "jakarta.persistence.Lob", "jakarta.persistence.Column",
-            "org.hibernate.annotations.JdbcTypeCode", "org.hibernate.annotations.ColumnDefault",
-            "javax.annotation.meta.When", "lombok", "JsonIgnore",
-            DTO.class.getName()
-        );
-
-        return annotationNameList.stream().anyMatch(annotation.name()::contains);
+        return excludedAnnotationNameList.stream().anyMatch(annotation.name()::contains);
     }
 
     static boolean isNotFieldExcluded(final VariableElement field) {
