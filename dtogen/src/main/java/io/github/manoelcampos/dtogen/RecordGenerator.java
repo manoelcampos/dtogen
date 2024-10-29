@@ -276,8 +276,32 @@ public class RecordGenerator {
             return "";
         }
 
-        final var genericTypes = typeArguments.stream().map(this::genericTypeArgument).collect(joining(", "));
-        return "<" + genericTypes + ">";
+        // Recursively gets the generic type arguments for each generic type argument.
+        final var genericTypeArgs =
+                typeArguments
+                        .stream()
+                        .map(this::getGenericTypeArgTypes)
+                        .collect(joining(", "));
+
+        return "<" + genericTypeArgs + ">";
+    }
+
+    /**
+     * Gets the type arguments of a generic type arg.
+     * If the original type is something such as Type1<Type2<Type3>, Type4>,
+     * it gets a string representation of Type1 with its 2 types: Type2<Type3> and Type4.
+     * Since Type2 has its own generic type argument as well,
+     * the method returns a String Type1<Type2<Type3>, Type4>
+     * instead of just Type1<Type2, Type4>.
+     * @param genericTypeArg the generic type argument to get its own type arguments (if any)
+     * @return a string representation of the generic type argument with its own type arguments (if any)
+    */
+    private String getGenericTypeArgTypes(final TypeMirror genericTypeArg) {
+        final var declaredGenericTypeArg = (DeclaredType) genericTypeArg;
+        final var genericTypeArgElement = (TypeElement)declaredGenericTypeArg.asElement();
+        // Gets the generic types of the generic type arg
+        final var genericSubTypes = genericTypeArguments(declaredGenericTypeArg);
+        return "%s%s".formatted(genericTypeArgument(genericTypeArg), genericSubTypes);
     }
 
     /**
