@@ -33,7 +33,7 @@ public class DTOProcessor extends AbstractProcessor {
             "jakarta.persistence.Id", "jakarta.persistence.GeneratedValue", "jakarta.persistence.Enumerated",
             "jakarta.persistence.OneToMany", "jakarta.persistence.ManyToOne",
             "jakarta.persistence.OneToOne", "jakarta.persistence.ManyToMany",
-            "jakarta.persistence.JoinColumn",
+            "jakarta.persistence.JoinColumn", "jakarta.persistence.Transient", "jakarta.persistence.JoinTable",
             "jakarta.persistence.Column", "jakarta.persistence.Lob", "jakarta.persistence.Column",
             "org.hibernate.annotations.",
             "javax.annotation.meta.When", "lombok", "JsonIgnore",
