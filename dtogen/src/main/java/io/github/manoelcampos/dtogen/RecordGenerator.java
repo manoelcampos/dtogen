@@ -179,23 +179,24 @@ public class RecordGenerator {
     {
         final var sourceFieldAnnotationsStr = getFieldAnnotationsStr(sourceFieldAnnotationData);
         final var annotationClass = DTO.MapToId.class;
-        if (AnnotationData.contains(sourceField, annotationClass)) {
-            final var fieldType = processor.getClassTypeElement(sourceField);
-            final var msg =
-                    ID_FIELD_NOT_FOUND.formatted(
-                        fieldType.getSimpleName(), modelClassName,
-                        sourceField.getSimpleName(), AnnotationData.getName(annotationClass)
-                    );
-
-            return findIdField(fieldType)
-                    .map(idField -> formatIdField(sourceField, idField, sourceFieldAnnotationData))
-                    .orElseGet(() -> {
-                        processor.processingEnv().getMessager().printMessage(Diagnostic.Kind.ERROR, msg, sourceField);
-                        return "";
-                    });
+        if (!AnnotationData.contains(sourceField, annotationClass)) {
+            return String.format("%s %s %s", sourceFieldAnnotationsStr, getFieldType(sourceField), sourceField.getSimpleName());
         }
 
-        return String.format("%s %s %s", sourceFieldAnnotationsStr, getFieldType(sourceField), sourceField.getSimpleName());
+        final var fieldType = processor.getClassTypeElement(sourceField);
+        final var msg =
+                ID_FIELD_NOT_FOUND.formatted(
+                    fieldType.getSimpleName(), modelClassName,
+                    sourceField.getSimpleName(), AnnotationData.getName(annotationClass)
+                );
+
+        return findIdField(fieldType)
+                .map(idField -> formatIdField(sourceField, idField, sourceFieldAnnotationData))
+                .orElseGet(() -> {
+                    processor.processingEnv().getMessager().printMessage(Diagnostic.Kind.ERROR, msg, sourceField);
+                    return "";
+                });
+
     }
 
     private Optional<VariableElement> findIdField(final TypeElement fieldType) {
