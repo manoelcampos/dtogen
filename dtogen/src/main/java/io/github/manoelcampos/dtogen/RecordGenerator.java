@@ -216,6 +216,12 @@ public class RecordGenerator {
         return getTypeName(fieldElement, true);
     }
 
+    /**
+     * Gets the name of a type based on a {@link VariableElement} representing a variable/field.
+     * @param fieldElement variable/field to get its type
+     * @param qualified if the type name must include the full-qualified package name or just the type name
+     * @return the type name
+     */
     private String getTypeName(final VariableElement fieldElement, final boolean qualified) {
         final var typeMirror = fieldElement.asType();
         if (typeMirror.getKind().isPrimitive()) {
@@ -235,7 +241,7 @@ public class RecordGenerator {
 
     /**
      * Checks if a field has a generic type argument annotated with {@link DTO}
-     * in order to generate that field in using the DTO record instead of the Model class.
+     * in order to generate that field using the DTO record instead of the Model class.
      * Consider we have a DTO record MainDTO that has a field of type {@code List<ModelClass>}.
      * if ModelClass is created with the {@link DTO} annotation, its related field in MainDTO
      * will be {@code List<ModelClassDTO>} instead of {@code List<ModelClass>}.
@@ -262,7 +268,7 @@ public class RecordGenerator {
      * If the type is {@code List<Customer>}, List is the declared type and Customer is the generic argument.
      *
      * @param declaredType the type to get its generic arguments
-     * @return a String representig all the generic type arguments in format {@code <Type1, TypeN>}
+     * @return a String representing all the generic type arguments in format {@code <Type1, TypeN>} or an empty string if there are no generic type arguments.
      */
     private String genericTypeArguments(final DeclaredType declaredType) {
         final var typeArguments = declaredType.getTypeArguments();
