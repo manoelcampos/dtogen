@@ -105,6 +105,7 @@ public class RecordGenerator {
             builder.append("package %s;%n%n".formatted(modelPackageName));
 
         final String implementsClause = hasInterface() ? "implements %s<%s>".formatted(interfaceName, modelClassName) : "";
+        builder.append(getGeneratedAnnotation());
         builder.append("public record %s (%s) %s {%n".formatted(recordName, fieldsStr, implementsClause));
         builder.append(generateToModelMethod());
         builder.append(generateFromModelMethod());
@@ -112,6 +113,20 @@ public class RecordGenerator {
         builder.append("}%n".formatted());
 
         new JavaFileWriter(processor).write(modelPackageName, recordName, builder.toString());
+    }
+
+    private String getGeneratedAnnotation() {
+        final var dtoProcessorClass = DTOProcessor.class.getName();
+        final var comments = "DTO generated using DTOGen Annotation Processor";
+
+        final var importAnnotation = "import javax.annotation.processing.Generated;";
+        final var annotation = "@Generated(value = \"%s\", comments = \"%s\")".formatted(dtoProcessorClass, comments);
+
+        return """
+                %s
+                
+                %s
+                """.formatted(importAnnotation, annotation);
     }
 
     private String defaultRecordConstrutor() {
