@@ -50,6 +50,11 @@ public class RecordGenerator {
      * in generated record.
      */
     private final Predicate<VariableElement> sourceClassFieldPredicate;
+
+    /**
+     * A Map where each <b>key</b> is a field inside a model (entity) class
+     * and the corresponding <b>key value</b> is a list of the field's annotations.
+     */
     private final Map<VariableElement, List<AnnotationData>> sourceFieldAnnotationsMap;
     private final Comparator<VariableElement> fieldNameComparator = Comparator.comparing(this::getFieldName);
 
