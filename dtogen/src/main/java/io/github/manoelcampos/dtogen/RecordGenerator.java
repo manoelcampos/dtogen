@@ -6,10 +6,7 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -17,8 +14,7 @@ import static io.github.manoelcampos.dtogen.AnnotationData.getFieldAnnotationsSt
 import static io.github.manoelcampos.dtogen.ClassUtil.getClassFields;
 import static io.github.manoelcampos.dtogen.DTOProcessor.hasAnnotation;
 import static java.util.function.Function.identity;
-import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.*;
 
 /**
  * Generates a {@link Record} java file from a given model class.
@@ -93,7 +89,7 @@ public class RecordGenerator {
     }
 
     public RecordGenerator(final DTOProcessor processor, final Element classElement) {
-        this(processor, classElement, anotation -> true, field -> true, "");
+        this(processor, classElement, annotation -> true, field -> true, "");
     }
 
     /**
@@ -104,6 +100,9 @@ public class RecordGenerator {
         final var builder = new StringBuilder();
         if (!modelPackageName.isBlank())
             builder.append("package %s;%n%n".formatted(modelPackageName));
+
+        builder.append(fieldAnnotationsImports());
+        builder.append(fieldTypeImports());
 
         final String implementsClause = hasInterface() ? "implements %s<%s>".formatted(interfaceName, modelClassName) : "";
         builder.append(getGeneratedAnnotation());
@@ -120,7 +119,7 @@ public class RecordGenerator {
         final var dtoProcessorClass = DTOProcessor.class.getName();
         final var comments = "DTO generated using DTOGen Annotation Processor";
 
-        final var importAnnotation = "import javax.annotation.processing.Generated;";
+        final var importAnnotation = "%nimport javax.annotation.processing.Generated;";
         final var annotation = "@Generated(value = \"%s\", comments = \"%s\")".formatted(dtoProcessorClass, comments);
 
         return """
@@ -154,7 +153,7 @@ public class RecordGenerator {
     }
 
     private String generateFieldInitialization(final VariableElement sourceField) {
-        final var sourceFieldTypeName = getTypeName(sourceField, false);
+        final var sourceFieldTypeName = getTypeName(sourceField, false, true);
         final boolean hasMapToId = AnnotationData.contains(sourceField, DTO.MapToId.class);
 
         return switch (sourceFieldTypeName) {
@@ -177,6 +176,37 @@ public class RecordGenerator {
                 .stream()
                 .map(entry -> generateRecordField(entry.getKey(), entry.getValue()))
                 .collect(joining(", "));
+    }
+
+    /**
+     * {@return a string containing the imports for the annotations for fields from the model class}
+     */
+    private String fieldAnnotationsImports() {
+        final var importsSet = sourceFieldAnnotationsMap
+                .values()
+                .stream()
+                .flatMap(Collection::stream)
+                .map(AnnotationData::name)
+                .collect(toSet());
+
+        return importsSet.stream().map("import %s;"::formatted).collect(joining("%n"));
+    }
+
+    /**
+     * {@return a string containing the imports for the field types from the model class}
+     */
+    private String fieldTypeImports() {
+        final var importsSet = sourceFieldAnnotationsMap
+                .keySet()
+                .stream()
+                .filter(field -> !field.asType().getKind().isPrimitive())
+                .filter(field -> !getTypeName(field).startsWith("java.lang."))
+                .filter(field -> !isFieldClassPackageSameAsRecordPackage(getTypeName(field)))
+                .map(field -> getTypeName(field, true, false))
+                .collect(toSet());
+
+        final String imports = importsSet.stream().map("import %s;"::formatted).collect(joining("%n"));
+        return imports.isBlank() ? imports : System.lineSeparator() + imports;
     }
 
     private String getFieldName(final VariableElement field) {
@@ -225,11 +255,20 @@ public class RecordGenerator {
     }
 
     private String getFieldType(final VariableElement fieldElement) {
-        return getTypeName(fieldElement).replaceAll("java\\.lang\\.", "");
+        final String typeName = getTypeName(fieldElement).replaceAll("java\\.lang\\.", "");
+        return ClassUtil.getSimpleClassName(typeName);
+    }
+
+    /**
+     * {@return true if the package of a field type class is the same as the package of the model class}
+     * @param fullyQualifiedFieldClassName the fully qualified name of the field type class
+     */
+    private boolean isFieldClassPackageSameAsRecordPackage(final String fullyQualifiedFieldClassName) {
+        return modelPackageName.equals(ClassUtil.getPackageName(fullyQualifiedFieldClassName));
     }
 
     private String getTypeName(final VariableElement fieldElement) {
-        return getTypeName(fieldElement, true);
+        return getTypeName(fieldElement, true, true);
     }
 
     boolean isBooleanType(final VariableElement fieldElement) {
@@ -240,9 +279,10 @@ public class RecordGenerator {
      * Gets the name of a type based on a {@link VariableElement} representing a variable/field.
      * @param fieldElement variable/field to get its type
      * @param qualified if the type name must include the full-qualified package name or just the type name
+     * @param includeTypeArgs indicates if the returned type name must include possible generic type arguments
      * @return the type name
      */
-    private String getTypeName(final VariableElement fieldElement, final boolean qualified) {
+    public String getTypeName(final VariableElement fieldElement, final boolean qualified, final boolean includeTypeArgs) {
         final var typeMirror = fieldElement.asType();
         if (typeMirror.getKind().isPrimitive()) {
             return typeMirror.getKind().toString().toLowerCase();
@@ -250,7 +290,7 @@ public class RecordGenerator {
             final var element = (TypeElement) declaredType.asElement();
 
             // Check if the type has generic parameters
-            final String typeArguments = genericTypeArguments(declaredType);
+            final String typeArguments = includeTypeArgs ? genericTypeArguments(declaredType) : "";
             final var name = qualified ? element.getQualifiedName() : element.getSimpleName();
             return name + typeArguments;
         }
@@ -318,7 +358,6 @@ public class RecordGenerator {
     */
     private String getGenericTypeArgTypes(final TypeMirror genericTypeArg) {
         final var declaredGenericTypeArg = (DeclaredType) genericTypeArg;
-        final var genericTypeArgElement = (TypeElement)declaredGenericTypeArg.asElement();
         // Gets the generic types of the generic type arg
         final var genericSubTypes = genericTypeArguments(declaredGenericTypeArg);
         return "%s%s".formatted(genericTypeArgument(genericTypeArg), genericSubTypes);
@@ -329,7 +368,9 @@ public class RecordGenerator {
      */
     private String genericTypeArgument(final TypeMirror genericType) {
         final var genericTypeElement = processor.getTypeMirrorAsElement(genericType);
-        return genericTypeElement.getQualifiedName() + (hasAnnotation(genericTypeElement, DTO.class) ? DTO.class.getSimpleName() : "");
+        final var qualifiedName = genericTypeElement.getQualifiedName().toString();
+        final var finalName = isFieldClassPackageSameAsRecordPackage(qualifiedName) ? ClassUtil.getSimpleClassName(qualifiedName) : qualifiedName;
+        return  finalName + (hasAnnotation(genericTypeElement, DTO.class) ? DTO.class.getSimpleName() : "");
     }
 
     /**

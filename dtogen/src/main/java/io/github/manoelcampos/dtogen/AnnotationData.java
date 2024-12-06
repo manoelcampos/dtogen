@@ -12,7 +12,7 @@ import static java.util.stream.Collectors.joining;
 
 /**
  * Stores data about an annotation.
- * @param name name of the annotation, without the @
+ * @param name the fully qualified name of the annotation, without the @
  * @param values values between the parenthesis of the annotation, if any.
  * @author Manoel Campos
  */
@@ -109,8 +109,15 @@ public record AnnotationData(String name, String values) {
         return sourceField.getAnnotationMirrors().stream().anyMatch(mirror -> isEqualTo(annotationClass, mirror));
     }
 
+    /**
+     * {@return the simple name of the annotation, without the package name}
+     */
+    public String getSimpleName(){
+        return ClassUtil.getSimpleClassName(name);
+    }
+
     @Override
     public String toString() {
-        return String.format("@%s(%s)", name, values);
+        return String.format("@%s(%s)", getSimpleName(), values);
     }
 }

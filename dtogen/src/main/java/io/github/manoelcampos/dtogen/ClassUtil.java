@@ -24,6 +24,22 @@ public final class ClassUtil {
         return qualifiedClassName.substring(0, qualifiedClassName.lastIndexOf("."));
     }
 
+    /**
+     * {@return the simple name of a class, without the package name}
+     */
+    public static String getSimpleClassName(final String fullyQualifiedClassName){
+        final int i = fullyQualifiedClassName.lastIndexOf('.');
+        return i == -1 ? fullyQualifiedClassName : fullyQualifiedClassName.substring(i+1);
+    }
+
+    /**
+     * {@return the package name of the class, or an empty string if the class has no package}
+     */
+    public static String getPackageName(final String fullyQualifiedClassName){
+        final int i = fullyQualifiedClassName.lastIndexOf('.');
+        return i == -1 ? "" : fullyQualifiedClassName.substring(0, i);
+    }
+
     public static boolean hasSuperClass(final TypeMirror superclassType) {
         final var qualifiedClassName = ((TypeElement) ((DeclaredType) superclassType).asElement()).getQualifiedName().toString();
         return superclassType.getKind() != TypeKind.NONE && !"java.lang.Object".equals(qualifiedClassName);
