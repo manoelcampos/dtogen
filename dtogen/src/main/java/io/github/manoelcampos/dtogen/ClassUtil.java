@@ -25,8 +25,8 @@ public final class ClassUtil {
     }
 
     public static boolean hasSuperClass(final TypeMirror superclassType) {
-        final var qualifiedClasname = ((TypeElement) ((DeclaredType) superclassType).asElement()).getQualifiedName().toString();
-        return superclassType.getKind() != TypeKind.NONE && !"java.lang.Object".equals(qualifiedClasname);
+        final var qualifiedClassName = ((TypeElement) ((DeclaredType) superclassType).asElement()).getQualifiedName().toString();
+        return superclassType.getKind() != TypeKind.NONE && !"java.lang.Object".equals(qualifiedClassName);
     }
 
     public static boolean isInstanceField(final VariableElement field) {
