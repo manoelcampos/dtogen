@@ -216,6 +216,10 @@ public class RecordGenerator {
         return getTypeName(fieldElement, true);
     }
 
+    boolean isBooleanType(final VariableElement fieldElement) {
+        return "boolean".equalsIgnoreCase(getTypeName(fieldElement));
+    }
+
     /**
      * Gets the name of a type based on a {@link VariableElement} representing a variable/field.
      * @param fieldElement variable/field to get its type
@@ -366,7 +370,8 @@ public class RecordGenerator {
         final var upCaseSourceFieldName = ClassUtil.getUpCaseFieldName(sourceFieldName);
         final boolean sourceFieldHasMapToId = AnnotationData.contains(sourceField, DTO.MapToId.class);
 
-        final var modelGetterName = "model.get%s()".formatted(upCaseSourceFieldName);
+        final var getterPrefix = isBooleanType(sourceField) ? "is" : "get";
+        final var modelGetterName = "model.%s%s()".formatted(getterPrefix, upCaseSourceFieldName);
         if (sourceFieldHasMapToId) {
             return "          %1$s == null ? 0L : %1$s.getId()".formatted(modelGetterName);
         }
