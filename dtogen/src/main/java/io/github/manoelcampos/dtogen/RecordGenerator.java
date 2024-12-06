@@ -6,7 +6,10 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -30,11 +33,6 @@ public class RecordGenerator {
      */
     private final String interfaceName;
 
-    /**
-     * The model class from which the record will be generated.
-     */
-    private final Element classElement;
-
     private final String modelPackageName;
     private final String modelClassName;
     private final String recordName;
@@ -56,7 +54,6 @@ public class RecordGenerator {
      * and the corresponding <b>key value</b> is a list of the field's annotations.
      */
     private final Map<VariableElement, List<AnnotationData>> sourceFieldAnnotationsMap;
-    private final Comparator<VariableElement> fieldNameComparator = Comparator.comparing(this::getFieldName);
 
 
     public RecordGenerator(
@@ -69,7 +66,6 @@ public class RecordGenerator {
         this.annnotationPredicate = annnotationPredicate;
         this.sourceClassFieldPredicate = sourceClassFieldPredicate;
         this.interfaceName = interfaceName;
-        this.classElement = classElement;
         final var modelClassTypeElement = (TypeElement) classElement;
         this.modelPackageName = ClassUtil.getPackageName(modelClassTypeElement);
         this.modelClassName = modelClassTypeElement.getSimpleName().toString();
