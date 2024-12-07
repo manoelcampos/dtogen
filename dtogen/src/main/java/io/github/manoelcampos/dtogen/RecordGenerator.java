@@ -199,7 +199,7 @@ public class RecordGenerator {
         final var importsSet = sourceFieldAnnotationsMap
                 .keySet()
                 .stream()
-                .filter(field -> !field.asType().getKind().isPrimitive())
+                .filter(field -> !isPrimitive(field))
                 .filter(field -> !getTypeName(field).startsWith("java.lang."))
                 .filter(field -> !isFieldClassPackageSameAsRecordPackage(getTypeName(field)))
                 .map(field -> getTypeName(field, true, false))
@@ -207,6 +207,10 @@ public class RecordGenerator {
 
         final String imports = importsSet.stream().map("import %s;"::formatted).collect(joining("%n"));
         return imports.isBlank() ? imports : System.lineSeparator() + imports;
+    }
+
+    private static boolean isPrimitive(final VariableElement field) {
+        return field.asType().getKind().isPrimitive();
     }
 
     private String getFieldName(final VariableElement field) {
@@ -448,18 +452,25 @@ public class RecordGenerator {
         final var sourceFieldName = getFieldName(sourceField);
         final var upCaseSourceFieldName = ClassUtil.getUpCaseFieldName(sourceFieldName);
         final boolean sourceFieldHasMapToId = AnnotationData.contains(sourceField, DTO.MapToId.class);
-        final var modelSetter =
-                sourceFieldHasMapToId ?
-                        "model.get%s().setId".formatted(upCaseSourceFieldName) :
-                        "model.set%s".formatted(upCaseSourceFieldName);
 
         // Instantiates an object of the type of the model field so that the id can be set
-        final var newFieldObj = sourceFieldHasMapToId ? "        model.set%s(new %s());%n".formatted(upCaseSourceFieldName, fieldType) : "";
-        builder.append(newFieldObj);
-
+        final var newFieldObj = sourceFieldHasMapToId ? "          model.set%s(new %s());%n".formatted(upCaseSourceFieldName, fieldType) : "";
         final var value = setterValue(sourceField, sourceFieldHasMapToId);
-        final var setField = "        %s(this.%s);%n".formatted(modelSetter, value);
+
+        final String modelSetter, setField;
+        if(sourceFieldHasMapToId) {
+            final var nullCheck = isPrimitive(sourceField) ? "" : "%s != null && ".formatted(value);
+            modelSetter = "model.get%s().setId".formatted(upCaseSourceFieldName);
+            builder.append("        if(%s%s > 0) {%n".formatted(nullCheck, value));
+            builder.append(newFieldObj);
+        }
+        else modelSetter = "model.set%s".formatted(upCaseSourceFieldName);
+
+        setField = (sourceFieldHasMapToId ? "  " : "") + "        %s(this.%s);%n".formatted(modelSetter, value);
         builder.append(setField);
+
+        if(sourceFieldHasMapToId)
+            builder.append("        }%n");
 
         return builder.toString();
     }
