@@ -23,7 +23,7 @@ import static java.util.stream.Collectors.partitioningBy;
  * @see <a href="https://www.baeldung.com/java-annotation-processing-builder">Java Annotation Processing with Builder</a>
  */
 @SupportedAnnotationTypes("io.github.manoelcampos.dtogen.DTO")
-@SupportedSourceVersion(SourceVersion.RELEASE_17)
+@SupportedSourceVersion(SourceVersion.RELEASE_21)
 @AutoService(Processor.class)
 public class DTOProcessor extends AbstractProcessor {
     private static final String DTO_INTERFACE_NAME = "DTORecord";
