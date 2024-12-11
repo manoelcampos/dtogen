@@ -459,9 +459,10 @@ public class RecordGenerator {
 
         final String modelSetter, setField;
         if(sourceFieldHasMapToId) {
-            final var nullCheck = isPrimitive(sourceField) ? "" : "%s != null && ".formatted(value);
+            // Works if the id field is a primitive or a boxed-type (such as long or Long)
+            final var nullCheck = "java.util.Objects.nonNull(%s)".formatted(value);
             modelSetter = "model.get%s().setId".formatted(upCaseSourceFieldName);
-            builder.append("        if(%s%s > 0) {%n".formatted(nullCheck, value));
+            builder.append("        if(%s && %s > 0) {%n".formatted(nullCheck, value));
             builder.append(newFieldObj);
         }
         else modelSetter = "model.set%s".formatted(upCaseSourceFieldName);
