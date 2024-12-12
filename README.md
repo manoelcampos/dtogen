@@ -39,9 +39,9 @@ dependencies {
 Now, annotate the model classes you want to generate DTOs with `@DTO`.
 If you annotated a `Person` class, a `PersonDTO` record will be generated in the same package.
 
-**WARNING**: Don't try to use the generated DTO before performing a successfull build on the project (for instance, using `mvn clean package`). That is when the DTOs are generated. If you try to use them before that, the IDE may show an error saying the DTO doesn't exist.
+**WARNING**: Don't try to use the generated DTO before performing a successful build on the project (for instance, using `mvn clean package`). That is when the DTOs are generated. If you try to use them before that, the IDE may show an error saying the DTO doesn't exist.
 
-Finally, use the DTO record where you wish, bu you may need to import the DTOs you are using. Since DTOs are generated in the same package as the annotated classes, you can import them using the `*` wildcard.
+Finally, use the DTO record where you wish, but you may need to import the DTOs you are using. Since DTOs are generated in the same package as the annotated classes, you can import them using the `*` wildcard.
 
 If you import the DTO individually, you may get a compiler error saying the DTO doesn't exist.
 Usually, you just need to build the project before trying to use any generated DTO,
