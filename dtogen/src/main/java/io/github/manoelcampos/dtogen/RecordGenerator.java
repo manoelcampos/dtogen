@@ -1,5 +1,6 @@
 package io.github.manoelcampos.dtogen;
 
+import javax.annotation.Nullable;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -290,28 +291,27 @@ public class RecordGenerator {
             return typeMirror.getKind().toString().toLowerCase();
         }
 
-        return getAsDeclaredType(typeMirror).map(declaredType -> {
-            final var element = (TypeElement) declaredType.asElement();
-
-            // Check if the type has generic parameters
-            final String typeArguments = includeTypeArgs ? genericTypeArguments(declaredType) : "";
-            final var name = qualified ? element.getQualifiedName() : element.getSimpleName();
-            return name + typeArguments;
-        }).orElseGet(() -> {
+        final var declaredType = getAsDeclaredType(typeMirror);
+        if (declaredType == null) {
             processor.errorMsg(fieldElement, "Unsupported type: " + typeMirror);
             return typeMirror.toString();
-        });
+        }
+
+        final var element = (TypeElement) declaredType.asElement();
+        // Check if the type has generic parameters
+        final String typeArguments = includeTypeArgs ? genericTypeArguments(declaredType) : "";
+        final var name = qualified ? element.getQualifiedName() : element.getSimpleName();
+        return name + typeArguments;
     }
 
     /**
      * Gets a {@link TypeMirror} as a {@link DeclaredType} if that {@link TypeMirror}
      * is in fact a {@link DeclaredType} (a type that represents a record, class, interface...).
      * @param typeMirror the type to check and get as a {@link DeclaredType}
-     * @return an {@link Optional} containing the {@link DeclaredType} if the given type is a {@link DeclaredType};
-     *         an empty Optional otherwise.
+     * @return a {@link DeclaredType} if the given type is a {@link DeclaredType}; null otherwise.
      */
-    Optional<DeclaredType> getAsDeclaredType(final TypeMirror typeMirror) {
-        return typeMirror instanceof DeclaredType declaredType ? Optional.of(declaredType) : Optional.empty();
+    @Nullable DeclaredType getAsDeclaredType(final TypeMirror typeMirror) {
+        return typeMirror instanceof DeclaredType declaredType ? declaredType : null;
     }
 
     /**
