@@ -51,7 +51,6 @@ public class RecordGenerator {
      */
     private final Map<VariableElement, List<AnnotationData>> sourceFieldAnnotationsMap;
 
-
     public RecordGenerator(
         final DTOProcessor processor,
         final Element classElement, final Predicate<AnnotationData> annnotationPredicate,
@@ -74,22 +73,6 @@ public class RecordGenerator {
             classFieldsList
                 .stream()
                 .collect(toMap(identity(), this::getFieldAnnotations, (a, b) -> a, LinkedHashMap::new));
-    }
-
-    public RecordGenerator(
-            final DTOProcessor processor,
-            final Element classElement, final Predicate<AnnotationData> annnotationPredicate,
-            final Predicate<VariableElement> sourceClassFieldPredicate)
-    {
-        this(processor, classElement, annnotationPredicate, sourceClassFieldPredicate, "");
-    }
-
-    public RecordGenerator(final DTOProcessor processor, final Element classElement, final Predicate<AnnotationData> annnotationPredicate) {
-        this(processor, classElement, annnotationPredicate, field -> true, "");
-    }
-
-    public RecordGenerator(final DTOProcessor processor, final Element classElement) {
-        this(processor, classElement, annotation -> true, field -> true, "");
     }
 
     /**
