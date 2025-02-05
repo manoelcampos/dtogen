@@ -29,7 +29,15 @@ public final class ClassUtil {
      */
     public static String getPackageName(final TypeElement classTypeElement) {
         final var qualifiedClassName = classTypeElement.getQualifiedName().toString();
-        return qualifiedClassName.substring(0, qualifiedClassName.lastIndexOf("."));
+        return getPackageName(qualifiedClassName);
+    }
+
+    /**
+     * {@return the package name of a class, or an empty string if the class has no package}
+     */
+    public static String getPackageName(final String fullyQualifiedClassName){
+        final int i = fullyQualifiedClassName.lastIndexOf('.');
+        return i == -1 ? "" : fullyQualifiedClassName.substring(0, i);
     }
 
     /**
@@ -41,13 +49,10 @@ public final class ClassUtil {
     }
 
     /**
-     * {@return the package name of the class, or an empty string if the class has no package}
+     * Checks if a given class has a superclass other than {@link java.lang.Object}.
+     * @param superclassType the current superclass of a given class to check
+     * @return true if a given class has a superclass, false otherwise
      */
-    public static String getPackageName(final String fullyQualifiedClassName){
-        final int i = fullyQualifiedClassName.lastIndexOf('.');
-        return i == -1 ? "" : fullyQualifiedClassName.substring(0, i);
-    }
-
     public static boolean hasSuperClass(final TypeMirror superclassType) {
         final var qualifiedClassName = ((TypeElement) ((DeclaredType) superclassType).asElement()).getQualifiedName().toString();
         return superclassType.getKind() != TypeKind.NONE && !"java.lang.Object".equals(qualifiedClassName);
