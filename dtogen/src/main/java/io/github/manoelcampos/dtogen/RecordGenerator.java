@@ -434,6 +434,11 @@ public class RecordGenerator {
         return methodCode.formatted(recordName, modelClassName, constructorValues);
     }
 
+    /**
+     * Generates the value representing a parameter for a DTO constructor call.
+     * @param sourceField the field in the model/entity class to pass as parameter to the DTO constructor
+     * @return a String representing the generated value to pass to the constructor
+     */
     private String dtoConstructorParam(final VariableElement sourceField) {
         final var sourceFieldName = sourceField.getSimpleName().toString();
         final var upCaseSourceFieldName = ClassUtil.getUpCaseFieldName(sourceFieldName);
