@@ -290,17 +290,28 @@ public class RecordGenerator {
             return typeMirror.getKind().toString().toLowerCase();
         }
 
-        if (typeMirror instanceof DeclaredType declaredType) {
+        return getAsDeclaredType(typeMirror).map(declaredType -> {
             final var element = (TypeElement) declaredType.asElement();
 
             // Check if the type has generic parameters
             final String typeArguments = includeTypeArgs ? genericTypeArguments(declaredType) : "";
             final var name = qualified ? element.getQualifiedName() : element.getSimpleName();
             return name + typeArguments;
-        }
+        }).orElseGet(() -> {
+            processor.errorMsg(fieldElement, "Unsupported type: " + typeMirror);
+            return typeMirror.toString();
+        });
+    }
 
-        processor.processingEnv().getMessager().printMessage(Diagnostic.Kind.ERROR, "Unsupported type: " + typeMirror, fieldElement);
-        return typeMirror.toString();
+    /**
+     * Gets a {@link TypeMirror} as a {@link DeclaredType} if that {@link TypeMirror}
+     * is in fact a {@link DeclaredType} (a type that represents a record, class, interface...).
+     * @param typeMirror the type to check and get as a {@link DeclaredType}
+     * @return an {@link Optional} containing the {@link DeclaredType} if the given type is a {@link DeclaredType};
+     *         an empty Optional otherwise.
+     */
+    Optional<DeclaredType> getAsDeclaredType(final TypeMirror typeMirror) {
+        return typeMirror instanceof DeclaredType declaredType ? Optional.of(declaredType) : Optional.empty();
     }
 
     /**

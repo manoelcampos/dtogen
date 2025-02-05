@@ -101,6 +101,10 @@ public class DTOProcessor extends AbstractProcessor {
         return annotatedElements.stream().collect(partitioningBy(el -> el.getKind().isClass()));
     }
 
+    void errorMsg(final Element element, final String msg){
+        processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, msg, element);
+    }
+
     /**
      * Creates a base interface to be implemented by all DTO generated records.
      * @param sourceClass a class with the {@link DTO} annotation to get its package name,
