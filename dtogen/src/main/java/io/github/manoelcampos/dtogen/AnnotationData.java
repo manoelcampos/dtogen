@@ -69,9 +69,9 @@ public record AnnotationData(String name, String values) {
     }
 
     /**
-     * Formats a value for some attribute in the annotation.
+     * Formats a value for some attribute in the annotation, adding quotes if that value is a String or char.
      * @param value the value to format
-     * @return
+     * @return the formatted value
      */
     private static String formatAttrValue(final Object value) {
         return value instanceof String ? String.format("\"%s\"", value) : value.toString();
