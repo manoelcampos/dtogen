@@ -6,7 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Creates a record representing a Data Type Object (DTO) for the annotated class.
+ * Creates a record representing a Data Type Object (DTO) for an annotated class/record.
  * @author Manoel Campos
  */
 @Target(ElementType.TYPE)

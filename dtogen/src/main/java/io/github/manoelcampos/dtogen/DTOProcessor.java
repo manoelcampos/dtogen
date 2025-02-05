@@ -18,7 +18,7 @@ import java.util.function.Predicate;
 import static java.util.stream.Collectors.partitioningBy;
 
 /**
- * Processes dtogen annotations to dynamically generate DTO records.
+ * Processes DTOGen annotations to dynamically generate DTO records.
  * @author Manoel Campos
  * @see <a href="https://www.baeldung.com/java-annotation-processing-builder">Java Annotation Processing with Builder</a>
  */
