@@ -12,6 +12,7 @@ import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 import java.lang.annotation.Annotation;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -52,32 +53,63 @@ public class DTOProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(final Set<? extends TypeElement> annotations, final RoundEnvironment roundEnv) {
-        for (final var annotation : annotations) {
-            final var annotatedElements = roundEnv.getElementsAnnotatedWith(annotation);
-
-            final var annotatedElementsMap = annotatedElements.stream().collect(partitioningBy(el -> el.getKind().isClass()));
-            //Gets only the classes annotated with @DTO
-            final var classElements = annotatedElementsMap.get(true);
-            classElements.stream().findFirst().ifPresent(this::createDtoInterface);
-            classElements
-                    .stream()
-                    .map(classElement ->
-                        new RecordGenerator(this,
-                            classElement,
-                            Predicate.not(this::isExcludedAnnotation),
-                            DTOProcessor::isNotFieldExcluded,
-                            DTO_INTERFACE_NAME)
-                    ).forEach(RecordGenerator::generate);
-
-            showInvalidAnnotationLocation(annotation, annotatedElementsMap.get(false));
-        }
-
+        annotations.forEach(annotation -> processAnnotation(roundEnv, annotation));
         return true;
     }
 
+    /**
+     * Process the {@link DTO} annotation found on a class.
+     * @param roundEnv
+     * @param annotation the {@link DTO} annotation to be processed
+     */
+    private void processAnnotation(final RoundEnvironment roundEnv, final TypeElement annotation) {
+        final var annotatedElements = roundEnv.getElementsAnnotatedWith(annotation);
+
+        final var annotatedElementsMap = getAnnotatedElementsMap(annotatedElements);
+        //Gets only classes which are annotated with @DTO
+        final var classElements = annotatedElementsMap.get(true);
+        classElements.stream().findFirst().ifPresent(this::createDtoInterface);
+
+        classElements.stream().map(this::newRecordGenerator).forEach(RecordGenerator::generate);
+
+        //Gets only non-classes which are annotated with @DTO
+        showInvalidAnnotationLocation(annotation, annotatedElementsMap.get(false));
+    }
+
+    /**
+     * {@return a new object to generate a DTO record}
+     * @param classElement the model/entity class to generate a DTO record for
+     */
+    private RecordGenerator newRecordGenerator(final Element classElement) {
+        return new RecordGenerator(
+                       this, classElement,
+                       Predicate.not(this::isExcludedAnnotation),
+                       DTOProcessor::isNotFieldExcluded,
+                       DTO_INTERFACE_NAME);
+    }
+
+    /**
+     * Gets a Map with the elements with the {@link DTO} annotation.
+     * The map has a boolean key where:
+     * - "true" key contains a list of annotated elements which are classes;
+     * - "false" key contains a list of annotated elements which aren't classes.
+     *
+     * @param annotatedElements list of elements with the {@link DTO} annotation
+     * @return the created map
+     */
+    private static Map<Boolean, List<Element>> getAnnotatedElementsMap(final Set<? extends Element> annotatedElements) {
+        return annotatedElements.stream().collect(partitioningBy(el -> el.getKind().isClass()));
+    }
+
+    /**
+     * Creates a base interface to be implemented by all DTO generated records.
+     * @param sourceClass a class with the {@link DTO} annotation to get its package name,
+     *                    so that the DTO interface is created in the same package.
+     */
     private void createDtoInterface(final Element sourceClass) {
         final var classElement = (TypeElement) sourceClass;
         final var packageName = ClassUtil.getPackageName(classElement);
+
         final var dtoInterfaceCode =
                 """
                 package %1$s;
@@ -87,6 +119,7 @@ public class DTOProcessor extends AbstractProcessor {
                 }
                 """
                 .formatted(packageName, DTO_INTERFACE_NAME);
+
         javaFileWriter.write(packageName, DTO_INTERFACE_NAME, dtoInterfaceCode);
     }
 
@@ -101,6 +134,10 @@ public class DTOProcessor extends AbstractProcessor {
         return excludedAnnotationNameList.stream().anyMatch(annotation.name()::contains);
     }
 
+    /**
+     * {@return true if a field must not be excluded from the generated DTO record, false otherwise}
+     * @param field the field to check
+     */
     static boolean isNotFieldExcluded(final VariableElement field) {
         return !hasAnnotation(field, DTO.Exclude.class);
     }
@@ -119,9 +156,9 @@ public class DTOProcessor extends AbstractProcessor {
     }
 
     /**
-     * Shows an error message for each element that is not a class and was annotated with the @DTO.
-     * @param annotation the annotation being    processed.
-     * @param nonClassTypes the list of elements that are not classes.
+     * Shows an error message for each element that is not a class and have the {@link DTO} annotation.
+     * @param annotation the annotation being processed.
+     * @param nonClassTypes the list of elements with the {@link DTO} annotation that are not classes.
      */
     private void showInvalidAnnotationLocation(final TypeElement annotation, final List<? extends Element> nonClassTypes) {
         final var msg = annotation.getQualifiedName() + " must be applied to a class";
@@ -136,10 +173,6 @@ public class DTOProcessor extends AbstractProcessor {
         return typeUtils;
     }
 
-    TypeElement getTypeMirrorAsElement(final TypeMirror genericType) {
-        return (TypeElement) typeUtils().asElement(genericType);
-    }
-
     /**
      * {@return the class that represents the field type.}
      *
@@ -147,5 +180,9 @@ public class DTOProcessor extends AbstractProcessor {
      */
     TypeElement getClassTypeElement(final VariableElement fieldElement) {
         return getTypeMirrorAsElement(fieldElement.asType());
+    }
+
+    TypeElement getTypeMirrorAsElement(final TypeMirror genericType) {
+        return (TypeElement) typeUtils().asElement(genericType);
     }
 }
