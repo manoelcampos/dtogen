@@ -48,8 +48,8 @@ public class JavaFileWriter {
      * @return the new {@link PrintWriter} object
      */
     private PrintWriter newJavaFileWriter(final String packageName, final String dtoRecordName) throws IOException {
-        final var point = packageName.isBlank() ? "" : ".";
-        final var javaFileObj = processor.processingEnv().getFiler().createSourceFile(packageName + point + dtoRecordName);
+        final var dot = packageName.isBlank() ? "" : ".";
+        final var javaFileObj = processor.processingEnv().getFiler().createSourceFile(packageName + dot + dtoRecordName);
         return new PrintWriter(javaFileObj.openWriter());
     }
 }
