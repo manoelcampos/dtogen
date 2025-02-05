@@ -73,8 +73,14 @@ public record AnnotationData(String name, String values) {
      * @param value the value to format
      * @return the formatted value
      */
-    private static String formatAttrValue(final Object value) {
-        return value instanceof String ? String.format("\"%s\"", value) : value.toString();
+    static String formatAttrValue(final Object value) {
+        if (value instanceof String)
+            return String.format("\"%s\"", value);
+
+        if (value instanceof Character)
+            return String.format("'%c'", value);
+
+        return value.toString();
     }
 
     /**
