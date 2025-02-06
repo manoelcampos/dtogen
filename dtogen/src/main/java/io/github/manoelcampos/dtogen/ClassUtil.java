@@ -6,7 +6,6 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
@@ -70,23 +69,22 @@ public final class ClassUtil {
     /**
      * Gets the fields of a given class, including the ones from its superclasses.
      * It doesn't sort elements to ensure the fields are returned in the same order they are declared in the class.
-     * @param typeUtils a reference to {@link DTOProcessor#typeUtils()}
+     *
+     * @param typeUtils        a reference to {@link DTOProcessor#typeUtils()}
      * @param classTypeElement the class to get the fields from
-     * @param fieldPredicate a predicate to indicate how to select class fields
      * @return a stream of fields from the given class
      */
-    public static Stream<VariableElement> getClassFields(final Types typeUtils, final TypeElement classTypeElement, final Predicate<VariableElement> fieldPredicate) {
+    public static Stream<VariableElement> getClassFields(final Types typeUtils, final TypeElement classTypeElement) {
         final var fieldStream =
                 classTypeElement.getEnclosedElements().stream()
                                 .filter(enclosedElement -> enclosedElement.getKind().isField())
                                 .map(enclosedElement -> (VariableElement) enclosedElement)
-                                .filter(fieldPredicate)
                                 .filter(ClassUtil::isInstanceField);
 
         final var superclassType = classTypeElement.getSuperclass();
         final var superclassElement = (TypeElement) typeUtils.asElement(superclassType);
         final var superClassFields = hasSuperClass(superclassType) ?
-                                        getClassFields(typeUtils, superclassElement, fieldPredicate) :
+                                        getClassFields(typeUtils, superclassElement) :
                                         Stream.<VariableElement>empty();
 
         return Stream.concat(superClassFields, fieldStream);

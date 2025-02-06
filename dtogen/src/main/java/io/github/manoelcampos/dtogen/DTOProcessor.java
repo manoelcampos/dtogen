@@ -2,6 +2,7 @@ package io.github.manoelcampos.dtogen;
 
 import com.google.auto.service.AutoService;
 
+import javax.annotation.Nullable;
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
@@ -101,7 +102,7 @@ public class DTOProcessor extends AbstractProcessor {
         return annotatedElements.stream().collect(partitioningBy(el -> el.getKind().isClass()));
     }
 
-    void errorMsg(final Element element, final String msg){
+    void error(final Element element, final String msg){
         processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, msg, element);
     }
 
@@ -117,9 +118,24 @@ public class DTOProcessor extends AbstractProcessor {
         final var dtoInterfaceCode =
                 """
                 package %1$s;
+                import java.util.function.Supplier;
+                
                 public interface %2$s<T> {
                     T toModel();
                     %2$s<T> fromModel(T model);
+                
+                     /**
+                      * {@return a new object, setting some attributes inside a supplier function}
+                      * @param supplier the supplier function to create the object and set some attributes
+                     */
+                     default <T> T newObject(final Long id, final Supplier<T> supplier){
+                        return hasId(id) ? supplier.get() : null;
+                     }
+
+                     default boolean hasId(final Long id){
+                         // Works if the id field is a primitive or a boxed-type (such as long or Long)
+                         return java.util.Objects.nonNull(id) && id > 0;
+                     }
                 }
                 """
                 .formatted(packageName, DTO_INTERFACE_NAME);
@@ -143,7 +159,15 @@ public class DTOProcessor extends AbstractProcessor {
      * @param field the field to check
      */
     static boolean isNotFieldExcluded(final VariableElement field) {
-        return !hasAnnotation(field, DTO.Exclude.class);
+        return !isFieldExcluded(field);
+    }
+
+    /**
+     * {@return true if a field must be excluded from the generated DTO record, false otherwise}
+     * @param field the field to check
+     */
+    static boolean isFieldExcluded(final VariableElement field) {
+        return hasAnnotation(field, DTO.Exclude.class);
     }
 
     /**
@@ -178,11 +202,10 @@ public class DTOProcessor extends AbstractProcessor {
     }
 
     /**
-     * {@return the class that represents the field type.}
-     *
+     * {@return the class that represents the field type, or null if the field is primitive}
      * @param fieldElement the element representing the field.
      */
-    TypeElement getClassTypeElement(final VariableElement fieldElement) {
+    @Nullable TypeElement getClassTypeElement(final VariableElement fieldElement) {
         return getTypeMirrorAsElement(fieldElement.asType());
     }
 
