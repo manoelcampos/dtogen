@@ -12,7 +12,10 @@ import lombok.NoArgsConstructor;
  * @author Manoel Campos
  */
 @DTO @Data @AllArgsConstructor @NoArgsConstructor
-public class Country {
+public class CountryClass {
+    // Constants aren't included in the DTO record
+    private static final long SOME_CONSTANT = 1;
+
     @NotNull
     private long id;
 
@@ -22,5 +25,13 @@ public class Country {
     @NotNull @NotBlank
     private String continent;
 
+    /**
+     * Since this field has a primitive type, the {@link DTO.MapToId} is not allowed,
+     * therefore, it's commented out to avoid build failure.
+     */
+    //@DTO.MapToId
     private long areaKm2;
+
+    @DTO.MapToId
+    private LanguageClass language;
 }

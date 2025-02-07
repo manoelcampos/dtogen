@@ -1,5 +1,6 @@
 package io.github.manoelcampos.dtogen.sample.model;
 
+import io.github.manoelcampos.dtogen.DTO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -7,9 +8,8 @@ import lombok.NoArgsConstructor;
 /**
  * @author Manoel Campos
  */
-@Data @AllArgsConstructor @NoArgsConstructor
-public class Profession {
-    private long id;
-    private String name;
+@Data @AllArgsConstructor @NoArgsConstructor @DTO
+public class ReligionClass {
     private String description;
+    private String origin;
 }
