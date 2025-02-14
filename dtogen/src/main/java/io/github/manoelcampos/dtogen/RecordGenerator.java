@@ -14,7 +14,6 @@ import java.util.stream.Stream;
 import static io.github.manoelcampos.dtogen.AnnotationData.getFieldAnnotationsStr;
 import static io.github.manoelcampos.dtogen.ClassUtil.*;
 import static io.github.manoelcampos.dtogen.DTOProcessor.hasAnnotation;
-import static io.github.manoelcampos.dtogen.DTOProcessor.isFieldExcluded;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.*;
 
@@ -25,6 +24,18 @@ import static java.util.stream.Collectors.*;
 public class RecordGenerator {
     private static final String ID_FIELD_NOT_FOUND = "Cannot find id field in %s. Since the %s.%s is annotated with %s, it must be a class with an id field.";
     private final DTOProcessor processor;
+
+    private final List<String> excludedAnnotationNameList = List.of(
+            DTOProcessor.class.getPackageName(),
+            "jakarta.persistence.Id", "jakarta.persistence.GeneratedValue", "jakarta.persistence.Enumerated",
+            "jakarta.persistence.OneToMany", "jakarta.persistence.ManyToOne",
+            "jakarta.persistence.OneToOne", "jakarta.persistence.ManyToMany",
+            "jakarta.persistence.JoinColumn", "jakarta.persistence.Transient", "jakarta.persistence.JoinTable",
+            "jakarta.persistence.Column", "jakarta.persistence.Lob", "jakarta.persistence.Column",
+            "org.hibernate.annotations.",
+            "javax.annotation.meta.When", "lombok", "JsonIgnore",
+            DTO.class.getName()
+    );
 
     /**
      * Name of the interface the record will implement (if any)
@@ -66,18 +77,13 @@ public class RecordGenerator {
     private final Set<String> additionalImports = new HashSet<>();
 
     public RecordGenerator(final DTOProcessor processor, final Element classElement) {
-        this(processor, classElement, a -> true, f -> true, "");
+        this(processor, classElement, "");
     }
 
-    public RecordGenerator(
-        final DTOProcessor processor,
-        final Element classElement, final Predicate<AnnotationData> annnotationPredicate,
-        final Predicate<VariableElement> sourceClassFieldPredicate,
-        final String interfaceName)
-    {
+    public RecordGenerator(final DTOProcessor processor, final Element classElement, final String interfaceName) {
         this.processor = processor;
-        this.annnotationPredicate = annnotationPredicate;
-        this.sourceClassFieldPredicate = sourceClassFieldPredicate;
+        this.annnotationPredicate = Predicate.not(this::isExcludedAnnotation);
+        this.sourceClassFieldPredicate = RecordGenerator::isNotFieldExcluded;
         this.interfaceName = Objects.requireNonNullElse(interfaceName, "");
         this.modelClassTypeElement = (TypeElement) classElement;
         this.modelClassName = modelClassTypeElement.getSimpleName().toString();
@@ -100,9 +106,17 @@ public class RecordGenerator {
     }
 
     /**
-     * Generate the DTO record file for the {@link DTO} annotated class.
+     * Generates the DTO record for the {@link DTO} annotated class and writes it to a file.
      */
-    public void generate() {
+    public void write() {
+        new JavaFileWriter(processor).write(modelPackageName, recordName, generate());
+    }
+
+    /**
+     * Generates the DTO record for the {@link DTO} annotated class.
+     * @return the generated java code for the DTO record
+     */
+    String generate() {
         final String fieldsStr = recordFieldsStr();
 
         final var recordBodyContent = new StringBuilder();
@@ -121,7 +135,9 @@ public class RecordGenerator {
         recordFullContent.append(fieldAnnotationsImports());
         recordFullContent.append(fieldTypeImports());
         recordFullContent.append(recordBodyContent);
-        new JavaFileWriter(processor).write(modelPackageName, recordName, recordFullContent.toString());
+
+        // Replaces %n codes by the OS-dependent char
+        return String.format(recordFullContent.toString());
     }
 
     private String getGeneratedAnnotation() {
@@ -164,8 +180,8 @@ public class RecordGenerator {
     private String generateFieldListInitialization(final Stream<VariableElement> fieldStream, @Nullable final Object idFieldValue) {
         // If no value is given for the id field, the field initialization list is used to instantiate a DTO object with all default values.
         final boolean dtoInstantiation = idFieldValue == null;
-        return fieldStream.
-                map(field -> isNotIdField(field) || idFieldValue == null ? generateFieldInitialization(field, dtoInstantiation) : idFieldValue.toString())
+        return fieldStream
+                .map(field -> isNotIdField(field) || idFieldValue == null ? generateFieldInitialization(field, dtoInstantiation) : idFieldValue.toString())
                 .collect(joining(", "));
     }
 
@@ -201,7 +217,13 @@ public class RecordGenerator {
             case "Integer", "int",  "long", "Short", "short", "Byte", "byte", "Double", "double" -> "0";
             case "Character", "char" -> "''";
             case "Boolean", "boolean" -> "false";
-            default -> hasMapToId && dtoInstantiation ? "0L" : "null";
+            default -> {
+                final String value = findIdField(sourceField)
+                        .map(idField -> generateFieldInitialization(idField, dtoInstantiation))
+                        .orElse("0L");
+
+                yield hasMapToId && dtoInstantiation ? value : "null";
+            }
         };
     }
 
@@ -291,10 +313,6 @@ public class RecordGenerator {
         return imports.isBlank() ? imports : System.lineSeparator() + imports;
     }
 
-    private static boolean isPrimitive(final VariableElement field) {
-        return field.asType().getKind().isPrimitive();
-    }
-
     private String getFieldName(final VariableElement field) {
         return field.getSimpleName().toString();
     }
@@ -343,7 +361,7 @@ public class RecordGenerator {
         return "boolean".equalsIgnoreCase(getTypeName(fieldElement));
     }
 
-    private String getTypeName(final VariableElement fieldElement) {
+    public String getTypeName(final VariableElement fieldElement) {
         return getTypeName(fieldElement, true, true);
     }
 
@@ -403,7 +421,7 @@ public class RecordGenerator {
         if (declaredType.getTypeArguments().isEmpty())
             return "";
 
-        final var firstTypeArg = processor.getTypeMirrorAsElement(declaredType.getTypeArguments().get(0));
+        final var firstTypeArg = processor.getTypeMirrorAsElement(declaredType.getTypeArguments().getFirst());
         return hasAnnotation(firstTypeArg, DTO.class) ? firstTypeArg.getSimpleName().toString() : "";
     }
 
@@ -527,9 +545,11 @@ public class RecordGenerator {
         // If declaredType is null, the field type is primitive and the MapToId annotation is not allowed
         final var fieldDeclaredType = getAsDeclaredType(sourceField.asType());
         if (sourceFieldHasMapToId && fieldDeclaredType != null) {
+            // Default value for a numeric field (according to its type)
+            final String defaultNumVal = generateFieldInitialization(sourceField, true);
             final String idFieldValue =
                     findIdField(sourceField)
-                            .map(idField -> "          %1$s == null ? 0L : %1$s.%2$s".formatted(modelGetterName, getterName(idField)))
+                            .map(idField -> "          %1$s == null ? %2$s : %1$s.%3$s".formatted(modelGetterName, defaultNumVal, getterName(idField)))
                             .orElse("");
 
             // If there is no "id" field, ignores the MapToId annotation
@@ -665,5 +685,32 @@ public class RecordGenerator {
 
         // Generates a stream chain to map a DTO object to a Model
         return "%s.stream().map(%s::toModel).toList()".formatted(sourceFieldName, genericTypeArg + DTO.class.getSimpleName());
+    }
+
+    /**
+     * Annotations to be excluded from the DTO fields.
+     * Check if an annotation is a DTO one or a JPA/Hibernation annotation
+     * that has only effect on database tables and should not be included in the DTO record.
+     * @param annotation the annotation to check
+     * @return true if the annotation is a JPA/Hibernation annotation, false otherwise.
+     */
+    private boolean isExcludedAnnotation(final AnnotationData annotation) {
+        return excludedAnnotationNameList.stream().anyMatch(annotation.name()::contains);
+    }
+
+    /**
+     * {@return true if a field must not be excluded from the generated DTO record, false otherwise}
+     * @param field the field to check
+     */
+    static boolean isNotFieldExcluded(final VariableElement field) {
+        return !isFieldExcluded(field);
+    }
+
+    /**
+     * {@return true if a field must be excluded from the generated DTO record, false otherwise}
+     * @param field the field to check
+     */
+    static boolean isFieldExcluded(final VariableElement field) {
+        return hasAnnotation(field, DTO.Exclude.class);
     }
 }
