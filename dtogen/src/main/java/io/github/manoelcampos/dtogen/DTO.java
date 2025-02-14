@@ -16,7 +16,7 @@ public @interface DTO {
      * Indicates that the annotated field must be excluded from the generated DTO.
      */
     @Target(ElementType.FIELD)
-    @Retention(RetentionPolicy.SOURCE)
+    @Retention(RetentionPolicy.RUNTIME)
     @interface Exclude {
     }
 
@@ -28,7 +28,7 @@ public @interface DTO {
      * the generated DTO will have a field {@code long countryId}.
      */
     @Target(ElementType.FIELD)
-    @Retention(RetentionPolicy.SOURCE)
+    @Retention(RetentionPolicy.RUNTIME)
     @interface MapToId {
     }
 }

@@ -15,7 +15,6 @@ import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Predicate;
 
 import static java.util.stream.Collectors.partitioningBy;
 
@@ -30,20 +29,20 @@ import static java.util.stream.Collectors.partitioningBy;
 public class DTOProcessor extends AbstractProcessor {
     private static final String DTO_INTERFACE_NAME = "DTORecord";
 
-    private final List<String> excludedAnnotationNameList = List.of(
-            DTOProcessor.class.getPackageName(),
-            "jakarta.persistence.Id", "jakarta.persistence.GeneratedValue", "jakarta.persistence.Enumerated",
-            "jakarta.persistence.OneToMany", "jakarta.persistence.ManyToOne",
-            "jakarta.persistence.OneToOne", "jakarta.persistence.ManyToMany",
-            "jakarta.persistence.JoinColumn", "jakarta.persistence.Transient", "jakarta.persistence.JoinTable",
-            "jakarta.persistence.Column", "jakarta.persistence.Lob", "jakarta.persistence.Column",
-            "org.hibernate.annotations.",
-            "javax.annotation.meta.When", "lombok", "JsonIgnore",
-            DTO.class.getName()
-    );
-
     private Types typeUtils;
     private JavaFileWriter javaFileWriter;
+
+    /** Default constructor called during the application compilation process,
+     * to further execute the processor. */
+    public DTOProcessor() {/**/}
+
+    /**
+     * Creates and initializes a DTOProcessor for testing purposes
+     * @param processingEnv processing environment to initialize the processor
+     */
+    DTOProcessor(final ProcessingEnvironment processingEnv) {
+        init(processingEnv);
+    }
 
     @Override
     public synchronized void init(final ProcessingEnvironment processingEnv) {
@@ -71,7 +70,7 @@ public class DTOProcessor extends AbstractProcessor {
         final var classElements = annotatedElementsMap.get(true);
         classElements.stream().findFirst().ifPresent(this::createDtoInterface);
 
-        classElements.stream().map(this::newRecordGenerator).forEach(RecordGenerator::generate);
+        classElements.stream().map(this::newRecordGenerator).forEach(RecordGenerator::write);
 
         //Gets only non-classes which are annotated with @DTO
         showInvalidAnnotationLocation(annotation, annotatedElementsMap.get(false));
@@ -82,11 +81,7 @@ public class DTOProcessor extends AbstractProcessor {
      * @param classElement the model/entity class to generate a DTO record for
      */
     private RecordGenerator newRecordGenerator(final Element classElement) {
-        return new RecordGenerator(
-                       this, classElement,
-                       Predicate.not(this::isExcludedAnnotation),
-                       DTOProcessor::isNotFieldExcluded,
-                       DTO_INTERFACE_NAME);
+        return new RecordGenerator(this, classElement, DTO_INTERFACE_NAME);
     }
 
     /**
@@ -141,33 +136,6 @@ public class DTOProcessor extends AbstractProcessor {
                 .formatted(packageName, DTO_INTERFACE_NAME);
 
         javaFileWriter.write(packageName, DTO_INTERFACE_NAME, dtoInterfaceCode);
-    }
-
-    /**
-     * Annotations to be excluded from the DTO fields.
-     * Check if an annotation is a DTO one or a JPA/Hibernation annotation
-     * that has only effect on database tables and should not be included in the DTO record.
-     * @param annotation the annotation to check
-     * @return true if the annotation is a JPA/Hibernation annotation, false otherwise.
-     */
-    private boolean isExcludedAnnotation(final AnnotationData annotation) {
-        return excludedAnnotationNameList.stream().anyMatch(annotation.name()::contains);
-    }
-
-    /**
-     * {@return true if a field must not be excluded from the generated DTO record, false otherwise}
-     * @param field the field to check
-     */
-    static boolean isNotFieldExcluded(final VariableElement field) {
-        return !isFieldExcluded(field);
-    }
-
-    /**
-     * {@return true if a field must be excluded from the generated DTO record, false otherwise}
-     * @param field the field to check
-     */
-    static boolean isFieldExcluded(final VariableElement field) {
-        return hasAnnotation(field, DTO.Exclude.class);
     }
 
     /**

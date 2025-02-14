@@ -49,12 +49,16 @@ public final class ClassUtil {
 
     /**
      * Checks if a given class has a superclass other than {@link java.lang.Object}.
-     * @param superclassType the current superclass of a given class to check
+     * @param classType the class to check
      * @return true if a given class has a superclass, false otherwise
      */
-    public static boolean hasSuperClass(final TypeMirror superclassType) {
-        final var qualifiedClassName = ((TypeElement) ((DeclaredType) superclassType).asElement()).getQualifiedName().toString();
-        return superclassType.getKind() != TypeKind.NONE && !"java.lang.Object".equals(qualifiedClassName);
+    public static boolean hasSuperClass(final TypeElement classType) {
+        final TypeMirror superClassType = classType.getSuperclass();
+        if(superClassType.getKind() == TypeKind.NONE)
+            return false;
+
+        final var qualifiedClassName = ((TypeElement) ((DeclaredType) superClassType).asElement()).getQualifiedName().toString();
+        return !"java.lang.Object".equals(qualifiedClassName);
     }
 
     /**
@@ -83,10 +87,19 @@ public final class ClassUtil {
 
         final var superclassType = classTypeElement.getSuperclass();
         final var superclassElement = (TypeElement) typeUtils.asElement(superclassType);
-        final var superClassFields = hasSuperClass(superclassType) ?
+        final var superClassFields = hasSuperClass(classTypeElement) ?
                                         getClassFields(typeUtils, superclassElement) :
                                         Stream.<VariableElement>empty();
 
         return Stream.concat(superClassFields, fieldStream);
     }
+
+    public static boolean isPrimitive(final VariableElement field) {
+        return isPrimitive(field.asType());
+    }
+
+    public static boolean isPrimitive(final TypeMirror fieldType) {
+        return fieldType.getKind().isPrimitive();
+    }
+
 }
