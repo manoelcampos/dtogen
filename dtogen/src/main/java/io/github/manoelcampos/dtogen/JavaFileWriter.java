@@ -1,6 +1,5 @@
 package io.github.manoelcampos.dtogen;
 
-import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -34,9 +33,7 @@ public class JavaFileWriter {
         try (final var out = newJavaFileWriter(packageName, recordName)) {
             out.printf(classContent);
         } catch (final IOException e) {
-            processor.processingEnv().getMessager().printMessage(
-                    Diagnostic.Kind.ERROR,
-                    "Error creating JavaFileObject to write the DTO generated code: " + e.getMessage(), null);
+            processor.error(null, "Error creating JavaFileObject to write the DTO generated code: " + e.getMessage());
         }
     }
 
