@@ -32,6 +32,10 @@ public class RecordGenerator {
     private final String interfaceName;
 
     private final String modelPackageName;
+
+    /**
+     * The type ot the model class to generate a record.
+     */
     private final TypeElement modelClassTypeElement;
     private final String modelClassName;
     private final String recordName;
@@ -61,6 +65,10 @@ public class RecordGenerator {
      */
     private final Set<String> additionalImports = new HashSet<>();
 
+    public RecordGenerator(final DTOProcessor processor, final Element classElement) {
+        this(processor, classElement, a -> true, f -> true, "");
+    }
+
     public RecordGenerator(
         final DTOProcessor processor,
         final Element classElement, final Predicate<AnnotationData> annnotationPredicate,
@@ -70,7 +78,7 @@ public class RecordGenerator {
         this.processor = processor;
         this.annnotationPredicate = annnotationPredicate;
         this.sourceClassFieldPredicate = sourceClassFieldPredicate;
-        this.interfaceName = interfaceName;
+        this.interfaceName = Objects.requireNonNullElse(interfaceName, "");
         this.modelClassTypeElement = (TypeElement) classElement;
         this.modelClassName = modelClassTypeElement.getSimpleName().toString();
         this.modelPackageName = ClassUtil.getPackageName(modelClassTypeElement);
@@ -331,12 +339,12 @@ public class RecordGenerator {
         return modelPackageName.equals(ClassUtil.getPackageName(fullyQualifiedFieldClassName));
     }
 
-    private String getTypeName(final VariableElement fieldElement) {
-        return getTypeName(fieldElement, true, true);
-    }
-
     boolean isBooleanType(final VariableElement fieldElement) {
         return "boolean".equalsIgnoreCase(getTypeName(fieldElement));
+    }
+
+    private String getTypeName(final VariableElement fieldElement) {
+        return getTypeName(fieldElement, true, true);
     }
 
     /**
