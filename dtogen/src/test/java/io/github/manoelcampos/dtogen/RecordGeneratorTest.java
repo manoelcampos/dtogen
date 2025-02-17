@@ -55,7 +55,7 @@ class RecordGeneratorTest {
                  import javax.annotation.processing.Generated;
                 
                  @Generated(value = "io.github.manoelcampos.dtogen.DTOProcessor", comments = "DTO generated using DTOGen Annotation Processor")
-                 public record SampleClassDTO (String str,  boolean bool,  List<String> genericList,  List nonGenericList)  {
+                 public record SampleClassDTO (String str,  boolean bool,  List<String> genericList,  List nonGenericList) implements DTORecord<SampleClass> {
                      @Override
                      public SampleClass toModel(){
                          final var model = new SampleClass();
@@ -104,7 +104,7 @@ class RecordGeneratorTest {
                 import javax.annotation.processing.Generated;
                 
                 @Generated(value = "io.github.manoelcampos.dtogen.DTOProcessor", comments = "DTO generated using DTOGen Annotation Processor")
-                public record Record1DTO (Long id, String name, LocalDate date)  {
+                public record Record1DTO (Long id, String name, LocalDate date) implements DTORecord<Record1> {
                     @Override
                     public Record1 toModel(){
                         final var model = new Record1(id, name, date);
@@ -146,7 +146,7 @@ class RecordGeneratorTest {
                 import javax.annotation.processing.Generated;
                 
                 @Generated(value = "io.github.manoelcampos.dtogen.DTOProcessor", comments = "DTO generated using DTOGen Annotation Processor")
-                public record ExcludedFieldSampleClassDTO (boolean included)  {
+                public record ExcludedFieldSampleClassDTO (boolean included) implements DTORecord<ExcludedFieldSampleClass> {
                     @Override
                     public ExcludedFieldSampleClass toModel(){
                         final var model = new ExcludedFieldSampleClass();
@@ -185,7 +185,7 @@ class RecordGeneratorTest {
                 import javax.annotation.processing.Generated;
                 
                 @Generated(value = "io.github.manoelcampos.dtogen.DTOProcessor", comments = "DTO generated using DTOGen Annotation Processor")
-                public record Class1DTO (long id,  Class2 class2)  {
+                public record Class1DTO (long id,  Class2 class2) implements DTORecord<Class1> {
                     @Override
                     public Class1 toModel(){
                         final var model = new Class1();
@@ -230,7 +230,7 @@ class RecordGeneratorTest {
                 import javax.annotation.processing.Generated;
                 
                 @Generated(value = "io.github.manoelcampos.dtogen.DTOProcessor", comments = "DTO generated using DTOGen Annotation Processor")
-                public record Class2DTO (long id, int class3Id)  {
+                public record Class2DTO (long id, int class3Id) implements DTORecord<Class2> {
                     @Override
                     public Class2 toModel(){
                         final var model = new Class2();
@@ -276,7 +276,7 @@ class RecordGeneratorTest {
                 import javax.annotation.processing.Generated;
                 
                 @Generated(value = "io.github.manoelcampos.dtogen.DTOProcessor", comments = "DTO generated using DTOGen Annotation Processor")
-                public record Record2DTO ( Long id,  LocalTime time,  double value,  Long record3Id)  {
+                public record Record2DTO ( Long id,  LocalTime time,  double value,  Long record3Id) implements DTORecord<Record2> {
                     @Override
                     public Record2 toModel(){
                         final var model = new Record2(id, time, value, new Record3(record3Id, ''));
@@ -320,7 +320,7 @@ class RecordGeneratorTest {
                 import javax.annotation.processing.Generated;
                 
                 @Generated(value = "io.github.manoelcampos.dtogen.DTOProcessor", comments = "DTO generated using DTOGen Annotation Processor")
-                public record Record4DTO (Long id,  double width,  long class1Id)  {
+                public record Record4DTO (Long id,  double width,  long class1Id) implements DTORecord<Record4> {
                     @Override
                     public Record4 toModel(){
                         final var model = new Record4(

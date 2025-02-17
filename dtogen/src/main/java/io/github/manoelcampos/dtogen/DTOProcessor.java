@@ -27,7 +27,6 @@ import static java.util.stream.Collectors.partitioningBy;
 @SupportedSourceVersion(SourceVersion.RELEASE_21)
 @AutoService(Processor.class)
 public class DTOProcessor extends AbstractProcessor {
-    private static final String DTO_INTERFACE_NAME = "DTORecord";
 
     private Types typeUtils;
     private JavaFileWriter javaFileWriter;
@@ -81,7 +80,7 @@ public class DTOProcessor extends AbstractProcessor {
      * @param classElement the model/entity class to generate a DTO record for
      */
     private RecordGenerator newRecordGenerator(final Element classElement) {
-        return new RecordGenerator(this, classElement, DTO_INTERFACE_NAME);
+        return new RecordGenerator(this, classElement);
     }
 
     /**
@@ -133,9 +132,9 @@ public class DTOProcessor extends AbstractProcessor {
                      }
                 }
                 """
-                .formatted(packageName, DTO_INTERFACE_NAME);
+                .formatted(packageName, RecordGenerator.DTO_INTERFACE_NAME);
 
-        javaFileWriter.write(packageName, DTO_INTERFACE_NAME, dtoInterfaceCode);
+        javaFileWriter.write(packageName, RecordGenerator.DTO_INTERFACE_NAME, dtoInterfaceCode);
     }
 
     /**

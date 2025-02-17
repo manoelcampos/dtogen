@@ -23,6 +23,10 @@ import static java.util.stream.Collectors.*;
  */
 public class RecordGenerator {
     private static final String ID_FIELD_NOT_FOUND = "Cannot find id field in %s. Since the %s.%s is annotated with %s, it must be a class with an id field.";
+    /**
+     * Name of the interface the record will implement
+     */
+    public static final String DTO_INTERFACE_NAME = "DTORecord";
     private final DTOProcessor processor;
 
     private final List<String> excludedAnnotationNameList = List.of(
@@ -36,11 +40,6 @@ public class RecordGenerator {
             "javax.annotation.meta.When", "lombok", "JsonIgnore",
             DTO.class.getName()
     );
-
-    /**
-     * Name of the interface the record will implement (if any)
-     */
-    private final String interfaceName;
 
     private final String modelPackageName;
 
@@ -77,14 +76,9 @@ public class RecordGenerator {
     private final Set<String> additionalImports = new HashSet<>();
 
     public RecordGenerator(final DTOProcessor processor, final Element classElement) {
-        this(processor, classElement, "");
-    }
-
-    public RecordGenerator(final DTOProcessor processor, final Element classElement, final String interfaceName) {
         this.processor = processor;
         this.annnotationPredicate = Predicate.not(this::isExcludedAnnotation);
         this.sourceClassFieldPredicate = RecordGenerator::isNotFieldExcluded;
-        this.interfaceName = Objects.requireNonNullElse(interfaceName, "");
         this.modelClassTypeElement = (TypeElement) classElement;
         this.modelClassName = modelClassTypeElement.getSimpleName().toString();
         this.modelPackageName = ClassUtil.getPackageName(modelClassTypeElement);
@@ -120,7 +114,7 @@ public class RecordGenerator {
         final String fieldsStr = recordFieldsStr();
 
         final var recordBodyContent = new StringBuilder();
-        final String implementsClause = hasInterface() ? "implements %s<%s>".formatted(interfaceName, modelClassName) : "";
+        final String implementsClause = "implements %s<%s>".formatted(DTO_INTERFACE_NAME, modelClassName);
         recordBodyContent.append(getGeneratedAnnotation());
         recordBodyContent.append("public record %s (%s) %s {%n".formatted(recordName, fieldsStr, implementsClause));
         recordBodyContent.append(generateToModelMethod());
@@ -481,10 +475,6 @@ public class RecordGenerator {
      */
     private List<AnnotationData> getFieldAnnotations(final VariableElement field) {
         return AnnotationData.getFieldAnnotations(field, annnotationPredicate);
-    }
-
-    private boolean hasInterface() {
-        return !interfaceName.isBlank();
     }
 
     private String generateToModelMethod() {
