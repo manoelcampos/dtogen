@@ -4,6 +4,10 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.util.Elements;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
@@ -69,5 +73,29 @@ public class TestUtil {
                 .filter(e -> e.getSimpleName().toString().equals(elementName))
                 .findFirst()
                 .orElseThrow();
+    }
+
+    /**
+     * Loads the source code from a Java file inside the {@link io.github.manoelcampos.dtogen.samples} package.
+     * It stripes all comments starting with /// from the code.
+     * @param sourceFileName the name of the source file to load (without the path)
+     * @return the file source code
+     */
+    static String loadSampleSourceFile(final String sourceFileName) {
+        final var testSamplesDir = "src/test/java/io/github/manoelcampos/dtogen/samples/";
+        final var fullPath = Paths.get(testSamplesDir, sourceFileName).toString();
+        try (var stream = Files.lines(Paths.get(fullPath)).filter(TestUtil::isNotThreeSlashesComment)){
+            return String.join(System.lineSeparator(), stream.toList());
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /**
+     * {@return true if a line doesn't start with a triple slash comment ///, false otherwise}
+     * @param line the line to check
+     */
+    private static boolean isNotThreeSlashesComment(final String line) {
+        return !line.trim().startsWith("///");
     }
 }

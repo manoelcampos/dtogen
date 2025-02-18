@@ -47,43 +47,7 @@ class RecordGeneratorTest {
     void generateFromSimpleClass() {
         final var instance = newRecordGenerator(SampleClass.class);
         final String generatedRecordCode = instance.generate();
-        final String expectedRecordCode =
-                 """
-                 package io.github.manoelcampos.dtogen.samples;
-                
-                 import java.util.List;
-                 import javax.annotation.processing.Generated;
-                
-                 @Generated(value = "io.github.manoelcampos.dtogen.DTOProcessor", comments = "DTO generated using DTOGen Annotation Processor")
-                 public record SampleClassDTO (String str,  boolean bool,  List<String> genericList,  List nonGenericList) implements DTORecord<SampleClass> {
-                     @Override
-                     public SampleClass toModel(){
-                         final var model = new SampleClass();
-                         model.setStr(this.str);
-                         model.setBool(this.bool);
-                         model.setGenericList(this.genericList);
-                         model.setNonGenericList(this.nonGenericList);
-                
-                         return model;
-                     }
-                
-                     @Override
-                     public SampleClassDTO fromModel(final SampleClass model){
-                         final var dto = new SampleClassDTO(
-                           model.getStr(),
-                           model.isBool(),
-                           model.getGenericList(),
-                           model.getNonGenericList()
-                         );
-                
-                         return dto;
-                     }
-                
-                     public SampleClassDTO() {
-                         this("", false, null, null);
-                     }
-                 }
-                 """;
+        final String expectedRecordCode = TestUtil.loadSampleSourceFile("SampleClassDTO.java");
 
         assertCodeEquals(expectedRecordCode, generatedRecordCode);
     }
@@ -96,37 +60,7 @@ class RecordGeneratorTest {
     void generateFromModelRecord() {
         final var instance = newRecordGenerator(Record1.class);
         final String generatedRecordCode = instance.generate();
-        final String expectedRecordCode =
-                """
-                package io.github.manoelcampos.dtogen.samples;
-
-                import java.time.LocalDate;
-                import javax.annotation.processing.Generated;
-                
-                @Generated(value = "io.github.manoelcampos.dtogen.DTOProcessor", comments = "DTO generated using DTOGen Annotation Processor")
-                public record Record1DTO (Long id, String name, LocalDate date) implements DTORecord<Record1> {
-                    @Override
-                    public Record1 toModel(){
-                        final var model = new Record1(id, name, date);
-                        return model;
-                    }
-                
-                    @Override
-                    public Record1DTO fromModel(final Record1 model){
-                        final var dto = new Record1DTO(
-                          model.id(),
-                          model.name(),
-                          model.date()
-                        );
-                
-                        return dto;
-                    }
-                
-                    public Record1DTO() {
-                        this(0L, "", null);
-                    }
-                }
-                """;
+        final String expectedRecordCode = TestUtil.loadSampleSourceFile("Record1DTO.java");
 
         assertCodeEquals(expectedRecordCode, generatedRecordCode);
     }
@@ -139,33 +73,7 @@ class RecordGeneratorTest {
     void generateWithDtoExclude() {
         final var instance = newRecordGenerator(ExcludedFieldSampleClass.class);
         final String generatedRecordCode = instance.generate();
-        final String expectedRecordCode =
-                """
-                package io.github.manoelcampos.dtogen.samples;
-                
-                import javax.annotation.processing.Generated;
-                
-                @Generated(value = "io.github.manoelcampos.dtogen.DTOProcessor", comments = "DTO generated using DTOGen Annotation Processor")
-                public record ExcludedFieldSampleClassDTO (boolean included) implements DTORecord<ExcludedFieldSampleClass> {
-                    @Override
-                    public ExcludedFieldSampleClass toModel(){
-                        final var model = new ExcludedFieldSampleClass();
-                        model.setIncluded(this.included);
-                
-                        return model;
-                    }
-                
-                    @Override
-                    public ExcludedFieldSampleClassDTO fromModel(final ExcludedFieldSampleClass model){
-                        final var dto = new ExcludedFieldSampleClassDTO(model.isIncluded());
-                        return dto;
-                    }
-                
-                    public ExcludedFieldSampleClassDTO() {
-                        this(false);
-                    }
-                }
-                """;
+        final String expectedRecordCode = TestUtil.loadSampleSourceFile("ExcludedFieldSampleClassDTO.java");
 
         assertCodeEquals(expectedRecordCode, generatedRecordCode);
     }
@@ -178,38 +86,7 @@ class RecordGeneratorTest {
     void generateClassAssociation() {
         final var instance = newRecordGenerator(Class1.class);
         final String generatedRecordCode = instance.generate();
-        final String expectedRecordCode =
-                """
-                package io.github.manoelcampos.dtogen.samples;
-
-                import javax.annotation.processing.Generated;
-                
-                @Generated(value = "io.github.manoelcampos.dtogen.DTOProcessor", comments = "DTO generated using DTOGen Annotation Processor")
-                public record Class1DTO (long id,  Class2 class2) implements DTORecord<Class1> {
-                    @Override
-                    public Class1 toModel(){
-                        final var model = new Class1();
-                        model.setId(this.id);
-                        model.setClass2(this.class2);
-                
-                        return model;
-                    }
-                
-                    @Override
-                    public Class1DTO fromModel(final Class1 model){
-                        final var dto = new Class1DTO(
-                          model.getId(),
-                          model.getClass2()
-                        );
-                
-                        return dto;
-                    }
-                
-                    public Class1DTO() {
-                        this(0, null);
-                    }
-                }
-                """;
+        final String expectedRecordCode = TestUtil.loadSampleSourceFile("Class1DTO.java");
 
         assertCodeEquals(expectedRecordCode, generatedRecordCode);
     }
@@ -223,38 +100,7 @@ class RecordGeneratorTest {
     void generateMapToIdAssociation() {
         final var instance = newRecordGenerator(Class2.class);
         final String generatedRecordCode = instance.generate();
-        final String expectedRecordCode =
-                """
-                package io.github.manoelcampos.dtogen.samples;
-
-                import javax.annotation.processing.Generated;
-                
-                @Generated(value = "io.github.manoelcampos.dtogen.DTOProcessor", comments = "DTO generated using DTOGen Annotation Processor")
-                public record Class2DTO (long id, int class3Id) implements DTORecord<Class2> {
-                    @Override
-                    public Class2 toModel(){
-                        final var model = new Class2();
-                        model.setId(this.id);
-                        model.setClass3(newObject(class3Id, () -> { var o = new Class3(); o.setId(class3Id); return o; }));
-                
-                        return model;
-                    }
-                
-                    @Override
-                    public Class2DTO fromModel(final Class2 model){
-                        final var dto = new Class2DTO(
-                          model.getId(),
-                          model.getClass3() == null ? 0 : model.getClass3().getId()
-                        );
-                
-                        return dto;
-                    }
-                
-                    public Class2DTO() {
-                        this(0, 0);
-                    }
-                }
-                """;
+        final String expectedRecordCode = TestUtil.loadSampleSourceFile("Class2DTO.java");
 
         assertCodeEquals(expectedRecordCode, generatedRecordCode);
     }
@@ -268,38 +114,7 @@ class RecordGeneratorTest {
     void generateMapToIdRecordsAssociation() {
         final var instance = newRecordGenerator(Record2.class);
         final String generatedRecordCode = instance.generate();
-        final String expectedRecordCode =
-                """
-                package io.github.manoelcampos.dtogen.samples;
-
-                import java.time.LocalTime;
-                import javax.annotation.processing.Generated;
-                
-                @Generated(value = "io.github.manoelcampos.dtogen.DTOProcessor", comments = "DTO generated using DTOGen Annotation Processor")
-                public record Record2DTO ( Long id,  LocalTime time,  double value,  Long record3Id) implements DTORecord<Record2> {
-                    @Override
-                    public Record2 toModel(){
-                        final var model = new Record2(id, time, value, new Record3(record3Id, ''));
-                        return model;
-                    }
-                
-                    @Override
-                    public Record2DTO fromModel(final Record2 model){
-                        final var dto = new Record2DTO(
-                          model.id(),
-                          model.time(),
-                          model.value(),
-                          model.record3() == null ? 0L : model.record3().id()
-                        );
-                
-                        return dto;
-                    }
-                
-                    public Record2DTO() {
-                        this(0L, null, 0, 0L);
-                    }
-                }
-                """;
+        final String expectedRecordCode = TestUtil.loadSampleSourceFile("Record2DTO.java");
 
         assertCodeEquals(expectedRecordCode, generatedRecordCode);
     }
@@ -313,40 +128,7 @@ class RecordGeneratorTest {
     void generateMapToIdFromAssociationBetweenRecordAndClass() {
         final var instance = newRecordGenerator(Record4.class);
         final String generatedRecordCode = instance.generate();
-        final String expectedRecordCode =
-                """
-                package io.github.manoelcampos.dtogen.samples;
-
-                import javax.annotation.processing.Generated;
-                
-                @Generated(value = "io.github.manoelcampos.dtogen.DTOProcessor", comments = "DTO generated using DTOGen Annotation Processor")
-                public record Record4DTO (Long id,  double width,  long class1Id) implements DTORecord<Record4> {
-                    @Override
-                    public Record4 toModel(){
-                        final var model = new Record4(
-                             id, width,
-                             newObject(class1Id, () -> { var o = new Class1(); o.setId(class1Id); return o; })
-                        );
-                
-                        return model;
-                    }
-                
-                    @Override
-                    public Record4DTO fromModel(final Record4 model){
-                        final var dto = new Record4DTO(
-                          model.id(),
-                          model.width(),
-                          model.class1() == null ? 0 : model.class1().getId()
-                        );
-                
-                        return dto;
-                    }
-                
-                    public Record4DTO() {
-                        this(0L, 0, 0);
-                    }
-                }
-                """;
+        final String expectedRecordCode = TestUtil.loadSampleSourceFile("Record4DTO.java");
 
         assertCodeEquals(expectedRecordCode, generatedRecordCode);
     }

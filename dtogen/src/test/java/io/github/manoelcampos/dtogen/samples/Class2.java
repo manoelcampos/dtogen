@@ -15,4 +15,20 @@ public class Class2 {
 
     @DTO.MapToId
     private Class3 class3;
+
+    public long getId() {
+        return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
+    }
+
+    public Class3 getClass3() {
+        return class3;
+    }
+
+    public void setClass3(Class3 class3) {
+        this.class3 = class3;
+    }
 }

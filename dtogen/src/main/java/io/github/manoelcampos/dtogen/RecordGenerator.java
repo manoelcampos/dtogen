@@ -23,6 +23,7 @@ import static java.util.stream.Collectors.*;
  */
 public class RecordGenerator {
     private static final String ID_FIELD_NOT_FOUND = "Cannot find id field in %s. Since the %s.%s is annotated with %s, it must be a class with an id field.";
+
     /**
      * Name of the interface the record will implement
      */
@@ -209,7 +210,7 @@ public class RecordGenerator {
             case "String" -> "\"\"";
             case "Long" -> "0L";
             case "Integer", "int",  "long", "Short", "short", "Byte", "byte", "Double", "double" -> "0";
-            case "Character", "char" -> "''";
+            case "Character", "char" -> "'\\0'";
             case "Boolean", "boolean" -> "false";
             default -> {
                 final String value = findIdField(sourceField)

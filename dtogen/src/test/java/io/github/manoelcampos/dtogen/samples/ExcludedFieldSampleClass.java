@@ -14,4 +14,20 @@ public class ExcludedFieldSampleClass {
 
     @DTO.Exclude
     private boolean excluded;
+
+    public boolean isIncluded() {
+        return included;
+    }
+
+    public void setIncluded(boolean included) {
+        this.included = included;
+    }
+
+    public boolean isExcluded() {
+        return excluded;
+    }
+
+    public void setExcluded(boolean excluded) {
+        this.excluded = excluded;
+    }
 }
