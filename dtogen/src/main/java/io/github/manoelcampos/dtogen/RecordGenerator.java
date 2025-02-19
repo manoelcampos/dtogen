@@ -30,13 +30,13 @@ public class RecordGenerator {
     public static final String DTO_INTERFACE_NAME = "DTORecord";
     private final DTOProcessor processor;
 
-    private final List<String> excludedAnnotationNameList = List.of(
+    private final Set<String> excludedAnnotationNameSet = Set.of(
             DTOProcessor.class.getPackageName(),
             "jakarta.persistence.Id", "jakarta.persistence.GeneratedValue", "jakarta.persistence.Enumerated",
             "jakarta.persistence.OneToMany", "jakarta.persistence.ManyToOne",
             "jakarta.persistence.OneToOne", "jakarta.persistence.ManyToMany",
             "jakarta.persistence.JoinColumn", "jakarta.persistence.Transient", "jakarta.persistence.JoinTable",
-            "jakarta.persistence.Column", "jakarta.persistence.Lob", "jakarta.persistence.Column",
+            "jakarta.persistence.Column", "jakarta.persistence.Lob",
             "org.hibernate.annotations.",
             "javax.annotation.meta.When", "lombok", "JsonIgnore",
             DTO.class.getName()
@@ -72,9 +72,14 @@ public class RecordGenerator {
     /**
      * A Set with additional elements to be imported in the generated record file.
      * Each item is just the element name, not the full import statement.
+     *
+     * <p>Sorts the list placing javax.* imports at the beginning
+     * Uses + instead of x since + comes before x in the ASCII table.
+     * The change is made locally just for sorting. The imports are not changed in the end.
+     * </p>
      * @see #fieldAnnotationsImports()
      */
-    private final Set<String> additionalImports = new HashSet<>();
+    private final Set<String> additionalImports = new TreeSet<>(Comparator.comparing(s -> s.replaceAll("javax", "java+")));
 
     public RecordGenerator(final DTOProcessor processor, final Element classElement) {
         this.processor = processor;
@@ -139,14 +144,8 @@ public class RecordGenerator {
         final var processorClass = DTOProcessor.class.getName();
         final var comments = "DTO generated using DTOGen Annotation Processor";
 
-        final var importAnnotation = "%nimport javax.annotation.processing.Generated;";
-        final var generatedAnnotation = "@Generated(value = \"%s\", comments = \"%s\")".formatted(processorClass, comments);
-
-        return """
-                %s
-                
-                %s
-                """.formatted(importAnnotation, generatedAnnotation);
+        addElementToImport("javax.annotation.processing.Generated");
+        return "@Generated(value = \"%s\", comments = \"%s\")".formatted(processorClass, comments);
     }
 
     private String defaultRecordConstrutor() {
@@ -686,7 +685,7 @@ public class RecordGenerator {
      * @return true if the annotation is a JPA/Hibernation annotation, false otherwise.
      */
     private boolean isExcludedAnnotation(final AnnotationData annotation) {
-        return excludedAnnotationNameList.stream().anyMatch(annotation.name()::contains);
+        return excludedAnnotationNameSet.stream().anyMatch(annotation.name()::contains);
     }
 
     /**
