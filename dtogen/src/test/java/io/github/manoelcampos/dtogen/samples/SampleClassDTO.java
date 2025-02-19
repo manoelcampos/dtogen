@@ -24,10 +24,10 @@ public record SampleClassDTO (String str,  boolean bool,  List<String> genericLi
     @Override
     public SampleClassDTO fromModel(final SampleClass model){
         final var dto = new SampleClassDTO(
-                model.getStr(),
-                model.isBool(),
-                model.getGenericList(),
-                model.getNonGenericList()
+            model.getStr(),
+            model.isBool(),
+            model.getGenericList(),
+            model.getNonGenericList()
         );
 
         return dto;
