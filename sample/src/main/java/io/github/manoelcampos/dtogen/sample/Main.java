@@ -22,13 +22,19 @@ public class Main {
         final var religion = new ReligionClass("Christianity", "Middle East");
         final var mother = new PersonRecord(1, "Mother", 60, 35, "Brazil", country, profession, religion);
         final var father = new PersonRecord(2, "Father", 75, 40, "Brazil", country, profession, religion);
-        final var person = new PersonRecord(3, "Manoel Campos", 80, 42, "Brazil", country, profession, religion, mother, father);
+        final var person = new PersonRecord(
+            3, "Manoel Campos", 80, 42, "Brazil",
+            country, profession, religion, mother, father
+        );
         System.out.println(person);
         System.out.println();
 
         /* To make the DTO generation work on your IDE, you must open the sample project directly,
          * instead o opening the entire repository. */
-        final PersonRecordDTO dto = new PersonRecordDTO(0,  "Manoel Campos", 80, 42, country.getId(), profession.id(), religion, mother, father.id());
+        final PersonRecordDTO dto = new PersonRecordDTO(
+            0,  "Manoel Campos", 80, 42, country.getId(),
+            profession.id(), religion, mother, father.id()
+        );
         System.out.println(dto);
     }
 }

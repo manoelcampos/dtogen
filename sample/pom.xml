@@ -6,13 +6,14 @@
 
     <groupId>io.github.manoelcampos</groupId>
     <artifactId>dtogen-sample</artifactId>
-    <version>2.0.2</version>
+    <!-- The version of the sample project defines the DTOGen version used. -->
+    <version>2.1.2</version>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <dtogen.version>2.1.1</dtogen.version>
+        <dtogen.version>${project.version}</dtogen.version>
         <lombok.version>1.18.36</lombok.version>
     </properties>
 
