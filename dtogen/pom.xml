@@ -222,6 +222,34 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
                 <version>3.3.1</version>
+
+                <executions>
+                    <execution>
+                        <id>copy-java-to-resources</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+
+                        <!--
+                        Include the DTORecord.java source file inside the generated jar file.
+                        Check the class documentation for more details.
+                        -->
+                        <configuration>
+                            <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>src/main/java</directory>
+                                    <includes>
+                                        <include>io/github/manoelcampos/dtogen/DTORecord.java</include>
+                                    </includes>
+                                    <!-- Subdirectory inside the target dir to copy the files to -->
+                                    <targetPath>.</targetPath>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>

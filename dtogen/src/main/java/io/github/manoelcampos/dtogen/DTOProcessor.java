@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static io.github.manoelcampos.dtogen.ClassUtil.readJavaSourceFileFromResources;
 import static java.util.stream.Collectors.partitioningBy;
 
 /**
@@ -109,31 +110,7 @@ public class DTOProcessor extends AbstractProcessor {
         final var classElement = (TypeElement) sourceClass;
         final var packageName = ClassUtil.getPackageName(classElement);
 
-        final var dtoInterfaceCode =
-                """
-                package %1$s;
-                import java.util.function.Supplier;
-                
-                public interface %2$s<T> {
-                    T toModel();
-                    %2$s<T> fromModel(T model);
-                
-                     /**
-                      * {@return a new object, setting some attributes inside a supplier function}
-                      * @param supplier the supplier function to create the object and set some attributes
-                     */
-                     default <T> T newObject(final Long id, final Supplier<T> supplier){
-                        return hasId(id) ? supplier.get() : null;
-                     }
-
-                     default boolean hasId(final Long id){
-                         // Works if the id field is a primitive or a boxed-type (such as long or Long)
-                         return java.util.Objects.nonNull(id) && id > 0;
-                     }
-                }
-                """
-                .formatted(packageName, RecordGenerator.DTO_INTERFACE_NAME);
-
+        final var dtoInterfaceCode = readJavaSourceFileFromResources(DTORecord.class.getSimpleName() + ".java", packageName);
         javaFileWriter.write(packageName, RecordGenerator.DTO_INTERFACE_NAME, dtoInterfaceCode);
     }
 

@@ -120,7 +120,7 @@ public class RecordGenerator {
         final String fieldsStr = recordFieldsStr();
 
         final var recordBodyContent = new StringBuilder();
-        final String implementsClause = "implements %s<%s>".formatted(DTO_INTERFACE_NAME, modelClassName);
+        final String implementsClause = "implements %s<%s>".formatted(DTORecord.class.getSimpleName(), modelClassName);
         recordBodyContent.append(getGeneratedAnnotation());
         recordBodyContent.append("public record %s (%s) %s {%n".formatted(recordName, fieldsStr, implementsClause));
         recordBodyContent.append(generateToModelMethod());
@@ -145,7 +145,7 @@ public class RecordGenerator {
         final var comments = "DTO generated using DTOGen Annotation Processor";
 
         addElementToImport("javax.annotation.processing.Generated");
-        return "@Generated(value = \"%s\", comments = \"%s\")".formatted(processorClass, comments);
+        return "@Generated(value = \"%s\", comments = \"%s\")%n".formatted(processorClass, comments);
     }
 
     private String defaultRecordConstrutor() {
@@ -286,8 +286,9 @@ public class RecordGenerator {
                 .map(AnnotationData::name)
                 .collect(toSet());
 
-        final var allImportsStream = Stream.concat(importsSet.stream(), additionalImports.stream());
-        return allImportsStream.map("import %s;"::formatted).collect(joining("%n"));
+        final var importStream = Stream.concat(importsSet.stream(), additionalImports.stream());
+        final String imports = importStream.map("import %s;"::formatted).collect(joining("%n")) + System.lineSeparator();
+        return "%s%n".formatted(imports);
     }
 
     /**

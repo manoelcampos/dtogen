@@ -1,5 +1,7 @@
 package io.github.manoelcampos.dtogen.samples;
 
+import io.github.manoelcampos.dtogen.DTORecord;
+
 import javax.annotation.processing.Generated;
 import java.time.LocalTime;
 

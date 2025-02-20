@@ -77,6 +77,7 @@ public class TestUtil {
 
     /**
      * Loads the source code from a Java file inside the {@link io.github.manoelcampos.dtogen.samples} package.
+     * The file is read directly from its directory.
      * It stripes all comments starting with /// from the code.
      * @param sourceFileName the name of the source file to load (without the path)
      * @return the file source code
@@ -84,18 +85,18 @@ public class TestUtil {
     static String loadSampleSourceFile(final String sourceFileName) {
         final var testSamplesDir = "src/test/java/io/github/manoelcampos/dtogen/samples/";
         final var fullPath = Paths.get(testSamplesDir, sourceFileName).toString();
-        try (var stream = Files.lines(Paths.get(fullPath)).filter(TestUtil::isNotThreeSlashesComment)){
+        /* Removes the line importing the DTORecord
+        * since in the application using DTOGen, the DTORecord and its implementations
+        * will belong to the same package, so no import is included in the generated
+        * DTOs. Therefore, tests need to match that. */
+        try (var stream = Files.lines(Paths.get(fullPath)).filter(ClassUtil::isNotThreeSlashesComment).filter(TestUtil::isNotDTORecordImport)){
             return String.join(System.lineSeparator(), stream.toList());
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
-    /**
-     * {@return true if a line doesn't start with a triple slash comment ///, false otherwise}
-     * @param line the line to check
-     */
-    private static boolean isNotThreeSlashesComment(final String line) {
-        return !line.trim().startsWith("///");
+    private static boolean isNotDTORecordImport(final String line) {
+        return !line.equals("import io.github.manoelcampos.dtogen.DTORecord;");
     }
 }

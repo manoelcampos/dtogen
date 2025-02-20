@@ -1,5 +1,7 @@
 package io.github.manoelcampos.dtogen.samples;
 
+import io.github.manoelcampos.dtogen.DTORecord;
+
 import javax.annotation.processing.Generated;
 
 /// A sample of the DTO record that the DTOGen must generate for the [Record4] model.
