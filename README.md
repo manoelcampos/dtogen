@@ -49,7 +49,7 @@ then run the project (even if the IDE is showing some erros), that it may work a
 
 The annotation processing will be automatically performed when you build your project, generating the DTOs for model classes that are annotation with `@DTO`.
 
-The example below shows a `Person` model class which uses the `@DTO` annotation to generate a `PersonDTO` record. This is the only annotation required to create a DTO. By default, the DTO record will have the same fields from the model class. Other annotation such as `@NotNull` and `@NotBlank` are from Hibernate Validation and will be copied to the DTO fields. This way, you don't need to duplicate validation rules between the model class and the DTO.
+The example below shows a `Person` model class (but it could be a record) which uses the `@DTO` annotation to generate a `PersonDTO` record. This is the only annotation required to create a DTO. By default, the DTO record will have the same fields from the model class. Other annotation such as `@NotNull` and `@NotBlank` are from Hibernate Validation and will be copied to the DTO fields. This way, you don't need to duplicate validation rules between the model class and the DTO.
 
 ```java
 @DTO
@@ -65,7 +65,6 @@ public class Person {
     @Min(5) @Max(50)
     private int footSize;
 
-    @DTO.Exclude
     private String password;
 
     private Country country;
@@ -85,9 +84,10 @@ public record PersonDTO (
     @Min(value=5) @Max(value=50) int footSize,
     String password,
     Country country,  
-    Profession profession) 
+    Profession profession) implements DTORecord<Person>
 {
-    
+    @Override public Person toModel(){/*...*/}
+    @Override public PersonDTO fromModel(Person model){/*...*/}
 }
 ```
 
@@ -95,7 +95,7 @@ public record PersonDTO (
 
 You can use `@DTO` sub annotations to configure how the DTO record is created. For instance, the `@DTO.Exclude` will exclude the annotated field from the DTO record.
 
-The `@DTO.MapToId` can be used in fields in which the type is anoter model class,
+The `@DTO.MapToId` can be used in fields in which the type is another model class,
 so that instead of including the entire object as an attribute in the DTO record,
 only its id will be included. This way, placing this annotation on a `country` field will generate a `countryId` field on the DTO.
 
@@ -115,10 +115,12 @@ public record PersonDTO (
     @NotNull @NotBlank String name, 
     @DecimalMin(value="0.1") @DecimalMax(value="200") double weightKg, 
     @Min(value=5) @Max(value=50) int footSize,
+    // password is not included in the generated DTO
     @NotNull long countryId,  
-    Profession profession) 
+    Profession profession) implements DTORecord<Person>
 {
-    
+    @Override public Person toModel(){/*...*/}
+    @Override public PersonDTO fromModel(Person model){/*...*/}
 }
 ```
 
