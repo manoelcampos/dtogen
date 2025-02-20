@@ -150,3 +150,10 @@ You must open just the sample project on the IDE for the annotation processing t
 If you try to use some generated DTO, the IDE may show the DTO record doesn't exist, despite they are correctly generated in the target/generated-sources directory. If you face this issue, just press SHIFT+SHIFT on IntelliJ e type `Reload All Maven Projects` to reload the project settings.
 
 If you still face issues, delete the `.idea` directory, close the project then the entire IntelliJ IDE (in such an order). Finally, reopen the project.
+
+
+#### 3.1.1 Error: Compilation failed: internal java compiler error
+
+If you face this issue when using IntelliJ, check the following IDE setting:
+
+`Build, Execution, Deployment > Maven > Runner > Delegate IDE build/run actions to maven`
