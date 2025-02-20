@@ -85,6 +85,20 @@ class ClassUtilTest {
         assertFalse(isPrimitive(class2Field));
     }
 
+    @Test
+    void testIsNotThreeSlashesComment() {
+        assertTrue(isNotThreeSlashesComment("/** Block Comment */"));
+        assertTrue(isNotThreeSlashesComment("// Line Comment "));
+        assertTrue(isNotThreeSlashesComment("// / Line Comment "));
+    }
+
+    @Test
+    void testIsThreeSlashesComment() {
+        assertFalse(isNotThreeSlashesComment("/// Tree Slashes Comment "));
+        assertFalse(isNotThreeSlashesComment("///Tree Slashes Comment "));
+        assertFalse(isNotThreeSlashesComment("////// Tree Slashes Comment "));
+    }
+
     private TypeElement getClassTypeMirror(final Class<?> clazz) {
         return elements.getTypeElement(clazz.getName());
     }
