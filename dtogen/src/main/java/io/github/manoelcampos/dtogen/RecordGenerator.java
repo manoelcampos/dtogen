@@ -23,11 +23,6 @@ import static java.util.stream.Collectors.*;
  */
 public class RecordGenerator {
     private static final String ID_FIELD_NOT_FOUND = "Cannot find id field in %s. Since the %s.%s is annotated with %s, it must be a class with an id field.";
-
-    /**
-     * Name of the interface the record will implement
-     */
-    public static final String DTO_INTERFACE_NAME = "DTORecord";
     private final DTOProcessor processor;
 
     private final Set<String> excludedAnnotationNameSet = Set.of(

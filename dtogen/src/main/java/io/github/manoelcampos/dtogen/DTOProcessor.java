@@ -110,8 +110,9 @@ public class DTOProcessor extends AbstractProcessor {
         final var classElement = (TypeElement) sourceClass;
         final var packageName = ClassUtil.getPackageName(classElement);
 
-        final var dtoInterfaceCode = readJavaSourceFileFromResources(DTORecord.class.getSimpleName() + ".java", packageName);
-        javaFileWriter.write(packageName, RecordGenerator.DTO_INTERFACE_NAME, dtoInterfaceCode);
+        final var dtoRecordName = DTORecord.class.getSimpleName();
+        final var dtoInterfaceCode = readJavaSourceFileFromResources(dtoRecordName + ".java", packageName);
+        javaFileWriter.write(packageName, dtoRecordName, dtoInterfaceCode);
     }
 
     /**
