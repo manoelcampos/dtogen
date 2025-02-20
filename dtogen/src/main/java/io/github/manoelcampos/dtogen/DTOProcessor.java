@@ -102,7 +102,10 @@ public class DTOProcessor extends AbstractProcessor {
     }
 
     /**
-     * Creates a base interface to be implemented by all DTO generated records.
+     * Gets the {@link DTORecord} source code from the interface copied to the
+     * DTOGen jar resources dir and writes it to the generated-source dir inside
+     * the application using DTOGen.
+     * Check the interface documentation for more details.
      * @param sourceClass a class with the {@link DTO} annotation to get its package name,
      *                    so that the DTO interface is created in the same package.
      */
