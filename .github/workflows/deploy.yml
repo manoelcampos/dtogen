@@ -4,6 +4,9 @@ on:
     tags:
       - 'v*.*.*'
 jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+
   publish:
     runs-on: ubuntu-latest
     steps:
@@ -28,7 +31,7 @@ jobs:
           cat <(echo -e "${{ secrets.OSSRH_GPG_SECRET_KEY }}") | gpg --batch --import
           gpg --list-keys
       - name: Publish package
-        run: mvn -f ./dtogen/pom.xml  --no-transfer-progress -Dgpg.passphrase=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }} --batch-mode -Psonatype deploy
+        run: mvn -f ./dtogen/pom.xml -DskipTests --no-transfer-progress -Dgpg.passphrase=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }} --batch-mode -Psonatype deploy
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
