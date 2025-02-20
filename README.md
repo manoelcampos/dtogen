@@ -91,6 +91,10 @@ public record PersonDTO (
 }
 ```
 
+The generated DTO provides implementations for the `toModel()` and `fromModel()` methods, that respectively, (i) converts the current DTO to a model class/record and (ii) converts a given model class/record to a DTO.
+This way, you don't need to use additional libraries such as [MapStruct](https://mapstruct.org).
+Finally, the implementations of those methods follow a Convention-over-Configuration approach and works out-of-the-box.
+
 ### 2.1 Additional Options
 
 You can use `@DTO` sub annotations to configure how the DTO record is created. For instance, the `@DTO.Exclude` will exclude the annotated field from the DTO record.
