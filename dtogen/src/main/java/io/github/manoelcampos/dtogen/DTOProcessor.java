@@ -135,7 +135,7 @@ public class DTOProcessor extends AbstractProcessor {
      */
     private void showInvalidAnnotationLocation(final TypeElement annotation, final List<? extends Element> nonClassTypes) {
         final var msg = annotation.getQualifiedName() + " must be applied to a class";
-        nonClassTypes.forEach(el -> processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, msg, el));
+        nonClassTypes.forEach(el -> error(el, msg));
     }
 
     ProcessingEnvironment processingEnv() {
