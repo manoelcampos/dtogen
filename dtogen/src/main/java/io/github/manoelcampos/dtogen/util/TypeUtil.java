@@ -153,10 +153,14 @@ public final class TypeUtil {
 
     /**
      * Checks if a given type (class/record) has an "id" field.
-     * @param type the class/record type to check
-     * @return an {@link Optional} containing the id field if it exists; an empty optional otherwise.
+     * @param type the type to check (null if it's a primitive type, which doesn't have inner fields)
+     * @return an {@link Optional} containing the id field if it exists;
+     * an empty optional if the type has no "id" field, or it's a primitive type.
      */
-    public Optional<VariableElement> findIdField(final TypeElement type) {
+    public Optional<VariableElement> findIdField(@Nullable final TypeElement type) {
+        if(type == null) // primitive type
+            return Optional.empty();
+
         final var classFieldsStream = TypeUtil.getClassFields(processor.types(), type);
         return classFieldsStream.filter(f -> f.getSimpleName().toString().equals("id")).findFirst();
     }
