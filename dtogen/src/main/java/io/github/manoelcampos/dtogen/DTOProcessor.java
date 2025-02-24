@@ -1,22 +1,18 @@
 package io.github.manoelcampos.dtogen;
 
 import com.google.auto.service.AutoService;
+import io.github.manoelcampos.dtogen.util.TypeUtil;
 
-import javax.annotation.Nullable;
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
-import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static io.github.manoelcampos.dtogen.ClassUtil.readJavaSourceFileFromResources;
 import static java.util.stream.Collectors.partitioningBy;
 
 /**
@@ -28,26 +24,30 @@ import static java.util.stream.Collectors.partitioningBy;
 @SupportedSourceVersion(SourceVersion.RELEASE_21)
 @AutoService(Processor.class)
 public class DTOProcessor extends AbstractProcessor {
+    private Types types;
+    private final TypeUtil typeUtil;
 
-    private Types typeUtils;
     private JavaFileWriter javaFileWriter;
 
     /** Default constructor called during the application compilation process,
      * to further execute the processor. */
-    public DTOProcessor() {/**/}
+    public DTOProcessor() {
+        this.typeUtil = new TypeUtil(this);
+    }
 
     /**
      * Creates and initializes a DTOProcessor for testing purposes
      * @param processingEnv processing environment to initialize the processor
      */
     DTOProcessor(final ProcessingEnvironment processingEnv) {
+        this();
         init(processingEnv);
     }
 
     @Override
     public synchronized void init(final ProcessingEnvironment processingEnv) {
         super.init(processingEnv);
-        this.typeUtils = processingEnv.getTypeUtils();
+        this.types = processingEnv.getTypeUtils();
         this.javaFileWriter = new JavaFileWriter(this);
     }
 
@@ -111,24 +111,11 @@ public class DTOProcessor extends AbstractProcessor {
      */
     private void createDtoInterface(final Element sourceClass) {
         final var classElement = (TypeElement) sourceClass;
-        final var packageName = ClassUtil.getPackageName(classElement);
+        final var packageName = TypeUtil.getPackageName(classElement);
 
         final var dtoRecordName = DTORecord.class.getSimpleName();
-        final var dtoInterfaceCode = readJavaSourceFileFromResources(dtoRecordName + ".java", packageName);
+        final var dtoInterfaceCode = JavaFileReader.readFromResources(dtoRecordName + ".java", packageName);
         javaFileWriter.write(packageName, dtoRecordName, dtoInterfaceCode);
-    }
-
-    /**
-     * Checks if a given {@link Element} (such as a {@link TypeElement} or {@link VariableElement})
-     * has a specific annotation.
-     * Generic types usually are the ones that accept annotations,
-     * such as {@code List<@NonNull String>}.
-     * @param element element to check
-     * @param annotation annotation to look for in the given element
-     * @return true if the annotation is present on the element, false otherwise
-     */
-    static boolean hasAnnotation(final Element element, final Class<? extends Annotation> annotation) {
-        return element.getAnnotation(annotation) != null;
     }
 
     /**
@@ -145,19 +132,12 @@ public class DTOProcessor extends AbstractProcessor {
         return processingEnv;
     }
 
-    Types typeUtils() {
-        return typeUtils;
+    public Types types() {
+        return types;
     }
 
-    /**
-     * {@return the class that represents the field type, or null if the field is primitive}
-     * @param fieldElement the element representing the field.
-     */
-    @Nullable TypeElement getClassTypeElement(final VariableElement fieldElement) {
-        return getTypeMirrorAsElement(fieldElement.asType());
+    public TypeUtil typeUtil() {
+        return typeUtil;
     }
 
-    TypeElement getTypeMirrorAsElement(final TypeMirror genericType) {
-        return (TypeElement) typeUtils().asElement(genericType);
-    }
 }

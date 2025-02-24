@@ -5,6 +5,7 @@ import com.karuslabs.elementary.junit.ToolsExtension;
 import com.karuslabs.elementary.junit.annotations.Processors;
 import com.karuslabs.utilitary.type.TypeMirrors;
 import io.github.manoelcampos.dtogen.samples.*;
+import io.github.manoelcampos.dtogen.util.TypeUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(ToolsExtension.class)
 @Processors({DTOProcessor.class})
-class RecordGeneratorTest {
+public class RecordGeneratorTest {
     private final ProcessingEnvironment env = Mockito.mock(ProcessingEnvironment.class);
     private DTOProcessor processor;
     private Elements elements;
@@ -34,7 +35,7 @@ class RecordGeneratorTest {
         this.elements = Tools.elements();
     }
 
-    private RecordGenerator newRecordGenerator(final Class<?> modelClass) {
+    private RecordGenerator newInstance(final Class<?> modelClass) {
         final var sampleClassTypeElement = typeMirrors.asTypeElement(typeMirrors.type(modelClass));
         return new RecordGenerator(processor, sampleClassTypeElement);
     }
@@ -45,7 +46,7 @@ class RecordGeneratorTest {
      */
     @Test
     void generateFromSimpleClass() {
-        final var instance = newRecordGenerator(SampleClass.class);
+        final var instance = newInstance(SampleClass.class);
         final String generatedRecordCode = instance.generate();
         final String expectedRecordCode = TestUtil.loadSampleSourceFile("SampleClassDTO.java");
 
@@ -58,7 +59,7 @@ class RecordGeneratorTest {
      */
     @Test
     void generateFromModelRecord() {
-        final var instance = newRecordGenerator(Record1.class);
+        final var instance = newInstance(Record1.class);
         final String generatedRecordCode = instance.generate();
         final String expectedRecordCode = TestUtil.loadSampleSourceFile("Record1DTO.java");
 
@@ -71,7 +72,7 @@ class RecordGeneratorTest {
      */
     @Test
     void generateWithDtoExclude() {
-        final var instance = newRecordGenerator(ExcludedFieldSampleClass.class);
+        final var instance = newInstance(ExcludedFieldSampleClass.class);
         final String generatedRecordCode = instance.generate();
         final String expectedRecordCode = TestUtil.loadSampleSourceFile("ExcludedFieldSampleClassDTO.java");
 
@@ -84,7 +85,7 @@ class RecordGeneratorTest {
      */
     @Test
     void generateClassAssociation() {
-        final var instance = newRecordGenerator(Class1.class);
+        final var instance = newInstance(Class1.class);
         final String generatedRecordCode = instance.generate();
         final String expectedRecordCode = TestUtil.loadSampleSourceFile("Class1DTO.java");
 
@@ -98,7 +99,7 @@ class RecordGeneratorTest {
      */
     @Test
     void generateMapToIdAssociation() {
-        final var instance = newRecordGenerator(Class2.class);
+        final var instance = newInstance(Class2.class);
         final String generatedRecordCode = instance.generate();
         final String expectedRecordCode = TestUtil.loadSampleSourceFile("Class2DTO.java");
 
@@ -112,7 +113,7 @@ class RecordGeneratorTest {
      */
     @Test
     void generateMapToIdRecordsAssociation() {
-        final var instance = newRecordGenerator(Record2.class);
+        final var instance = newInstance(Record2.class);
         final String generatedRecordCode = instance.generate();
         final String expectedRecordCode = TestUtil.loadSampleSourceFile("Record2DTO.java");
 
@@ -126,7 +127,7 @@ class RecordGeneratorTest {
      */
     @Test
     void generateMapToIdFromAssociationBetweenRecordAndClass() {
-        final var instance = newRecordGenerator(Record4.class);
+        final var instance = newInstance(Record4.class);
         final String generatedRecordCode = instance.generate();
         final String expectedRecordCode = TestUtil.loadSampleSourceFile("Record4DTO.java");
 
@@ -136,15 +137,29 @@ class RecordGeneratorTest {
     @Test
     void isBooleanType() {
         final var clazz = SampleClass.class;
-        final var instance = newRecordGenerator(clazz);
+        final var instance = newInstance(clazz);
         assertTrue(instance.isBooleanType(fieldField(clazz, "bool")));
         assertFalse(instance.isBooleanType(fieldField(clazz, "str")));
     }
 
     @Test
-    void getTypeName() {
+    void getAsDeclaredType() {
+        // Gets a TypeMirror from a primitive (non-declared) type
+        final TypeMirror primitiveTypeMirror = typeMirrors.type(long.class);
+        assertNull(TypeUtil.getAsDeclaredType(primitiveTypeMirror));
+
+        // Gets a TypeMirror from reference (declared) types
+        final TypeMirror declaredTypeMirror1 = typeMirrors.type(String.class);
+        final TypeMirror declaredTypeMirror2 = typeMirrors.type(Long.class);
+        assertNotNull(TypeUtil.getAsDeclaredType(declaredTypeMirror1));
+        assertNotNull(TypeUtil.getAsDeclaredType(declaredTypeMirror2));
+    }
+
+    @Test
+    void testGetTypeName() {
         final var clazz = SampleClass.class;
-        final var instance = newRecordGenerator(clazz);
+        final var gen = newInstance(clazz);
+        final var instance = new TypeUtil(gen);
         final VariableElement strAttribute = fieldField(clazz, "str");
         final VariableElement genericListAttribute = fieldField(clazz, "genericList");
         final VariableElement nonGenericListAttribute = fieldField(clazz, "nonGenericList");
@@ -159,20 +174,6 @@ class RecordGeneratorTest {
         assertEquals("List", instance.getTypeName(genericListAttribute, false, false));
         assertEquals("java.util.List", instance.getTypeName(genericListAttribute, true, false));
         assertEquals("java.util.List", instance.getTypeName(nonGenericListAttribute, true, false));
-    }
-
-    @Test
-    void getAsDeclaredType() {
-        final var instance = newRecordGenerator(SampleClass.class);
-        // Gets a TypeMirror from a primitive (non-declared) type
-        final TypeMirror primitiveTypeMirror = typeMirrors.type(long.class);
-        assertNull(instance.getAsDeclaredType(primitiveTypeMirror));
-
-        // Gets a TypeMirror from reference (declared) types
-        final TypeMirror declaredTypeMirror1 = typeMirrors.type(String.class);
-        final TypeMirror declaredTypeMirror2 = typeMirrors.type(Long.class);
-        assertNotNull(instance.getAsDeclaredType(declaredTypeMirror1));
-        assertNotNull(instance.getAsDeclaredType(declaredTypeMirror2));
     }
 
     private VariableElement fieldField(Class<?> clazz, final String elementName) {

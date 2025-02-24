@@ -1,8 +1,8 @@
 package io.github.manoelcampos.dtogen;
 
-import javax.lang.model.element.AnnotationMirror;
-import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.VariableElement;
+import io.github.manoelcampos.dtogen.util.TypeUtil;
+
+import javax.lang.model.element.*;
 import javax.lang.model.util.ElementFilter;
 import java.lang.annotation.Annotation;
 import java.util.List;
@@ -116,10 +116,23 @@ public record AnnotationData(String name, String values) {
     }
 
     /**
+     * Checks if a given {@link Element} (such as a {@link TypeElement} or {@link VariableElement})
+     * has a specific annotation.
+     * Generic types usually are the ones that accept annotations,
+     * such as {@code List<@NonNull String>}.
+     * @param element element to check
+     * @param annotation annotation to look for in the given element
+     * @return true if the annotation is present on the element, false otherwise
+     */
+    public static boolean hasAnnotation(final Element element, final Class<? extends Annotation> annotation) {
+        return element.getAnnotation(annotation) != null;
+    }
+
+    /**
      * {@return the simple name of the annotation, without the package name}
      */
     public String getSimpleName(){
-        return ClassUtil.getSimpleClassName(name);
+        return TypeUtil.getSimpleClassName(name);
     }
 
     @Override
