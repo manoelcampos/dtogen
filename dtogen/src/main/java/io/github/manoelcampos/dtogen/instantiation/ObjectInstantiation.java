@@ -28,8 +28,7 @@ public abstract sealed class ObjectInstantiation permits ClassInstantiation, Rec
                          """
                                  final var model = new %s(%s
                          %s
-                                 return model;
-                         """;
+                                 return model;""";
     protected static final String METHOD_CALL_CLOSING = ");";
 
     /**

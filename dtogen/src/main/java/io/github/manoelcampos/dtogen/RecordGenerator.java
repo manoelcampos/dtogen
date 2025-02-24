@@ -336,10 +336,10 @@ public final class RecordGenerator {
 
     private String generateToModelMethod() {
         final var template = """
-                             @Override
-                             public %s toModel(){
+                                 @Override
+                                 public %s toModel(){
                                  %s
-                             }
+                                 }
                              
                              """;
 
