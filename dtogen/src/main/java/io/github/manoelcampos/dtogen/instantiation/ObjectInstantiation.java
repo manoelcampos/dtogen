@@ -17,8 +17,10 @@ import static io.github.manoelcampos.dtogen.util.FieldUtil.isNotIdField;
 import static java.util.stream.Collectors.joining;
 
 /**
- * Generates the code to instantiate an object from a class or record.
+ * Generates the code to instantiate an object, whose type is a class or record,
+ * using the values from a model class/record object.
  * @author Manoel Campos
+ *
  * @see #newInstance(RecordGenerator, TypeElement)
  */
 public abstract sealed class ObjectInstantiation permits ClassInstantiation, RecordInstantiation{
@@ -31,7 +33,8 @@ public abstract sealed class ObjectInstantiation permits ClassInstantiation, Rec
     protected static final String METHOD_CALL_CLOSING = ");";
 
     /**
-     * A {@link RecordGenerator} instance for the DTO record being generated.
+     * A {@link RecordGenerator} instance for the DTO record being generated,
+     * which indicates the class/record of the model object to
      */
     protected final RecordGenerator recordGen;
     protected final TypeUtil typeUtil;
@@ -58,7 +61,7 @@ public abstract sealed class ObjectInstantiation permits ClassInstantiation, Rec
     }
 
     /**
-     * {@return the actual code to call a constructor to instantiate a model object}
+     * {@return the actual code to call a constructor to instantiate an object using the values from a model object}
      * The model object to be instantiate is defined by the {@link RecordGenerator#getModelTypeElement()}.
      * @see #recordGen
      */
@@ -66,51 +69,51 @@ public abstract sealed class ObjectInstantiation permits ClassInstantiation, Rec
         // Gets all fields in the model class to allow instantiating it (including fields annotated with @DTO.Ignore)
         final String fieldValues =
                 recordGen.allFieldsStream()
-                         .map(this::generateValueForModelField)
+                         .map(this::generateFieldValue)
                          .collect(joining(fieldDelimiter));
 
         return constructorCall(fieldValues);
     }
 
     /**
-     * {@return value to be given to a field of a model/entity class which will be instantiated}
+     * {@return value to be given to a field of a model class/record which will be instantiated}
      * @param sourceField model field to generate the value to be passed to the class/record constructor
      */
-    String generateValueForModelField(final VariableElement sourceField) {
+    String generateFieldValue(final VariableElement sourceField) {
         final var builder = new StringBuilder();
         final var sourceFieldName = FieldUtil.getFieldName(sourceField);
         final var upCaseSourceFieldName = FieldUtil.getUpCaseFieldName(sourceFieldName);
         final boolean sourceFieldAnnotatedWithMapToId = AnnotationData.contains(sourceField, DTO.MapToId.class);
 
         final var setterValue = setterValue(sourceField, sourceFieldAnnotatedWithMapToId);
-        final var isRecord = TypeUtil.isRecord(sourceField.getEnclosingElement());
+        final var isEnclosingElementRecord = TypeUtil.isRecord(sourceField.getEnclosingElement());
 
-        final String modelSetId;
+        final String modelSetIdCall;
         final boolean primitive = FieldUtil.isPrimitive(sourceField);
         if(setterValue.isBlank()){
             return "";
         }
 
         if(sourceFieldAnnotatedWithMapToId && !primitive) {
-            modelSetId = "";
+            modelSetIdCall = "";
             final String fieldValue = newObject(sourceField, setterValue);
 
             // Instantiates an object of the type of the model field so that the id can be set
             final var modelSetterCall = "          model.set%s(%s);%n".formatted(upCaseSourceFieldName, fieldValue);
-            builder.append(isRecord ? "%n%s".formatted(fieldValue) : modelSetterCall);
+            builder.append(isEnclosingElementRecord ? "%n%s".formatted(fieldValue) : modelSetterCall);
         }
-        else modelSetId = "model.set%s".formatted(upCaseSourceFieldName);
+        else modelSetIdCall = "model.set%s".formatted(upCaseSourceFieldName);
 
-        if(!modelSetId.isBlank()) {
-            final String value = "        %s(this.%s);".formatted(modelSetId, setterValue);
-            builder.append(isRecord ? setterValue : value);
+        if(!modelSetIdCall.isBlank()) {
+            final String value = "        %s(this.%s);".formatted(modelSetIdCall, setterValue);
+            builder.append(isEnclosingElementRecord ? setterValue : value);
         }
 
         return builder.toString();
     }
 
     /**
-     * Generates the Java code representing the value to be passed to a setter method inside call.
+     * Generates the Java code representing the value to be passed to a setter method call.
      *
      * @param sourceField           the field to generate the value to be passed to the setter method
      * @param sourceFieldHasMapToId indicates if the field has the {@link DTO.MapToId} annotation.
@@ -145,19 +148,19 @@ public abstract sealed class ObjectInstantiation permits ClassInstantiation, Rec
      * @return the generated constructor call code
      */
     public final String newObject(final VariableElement sourceField, final String idFieldValue) {
-        final var classTypeName = typeUtil.getTypeName(sourceField, false, true);
-        final var classTypeElement = typeUtil.getFieldTypeElement(sourceField);
-        final var isPrimitive = classTypeElement == null;
+        final var fieldTypeName = typeUtil.getTypeName(sourceField, false, true);
+        final var fieldTypeElement = typeUtil.getFieldTypeElement(sourceField);
+        final var isPrimitive = fieldTypeElement == null;
 
         // If the field is primitive, return the default value for that type (since there is no instantiation for such types).
         if(isPrimitive)
             return generateFieldInitialization(typeUtil, sourceField, false);
 
-        final var fieldStream = TypeUtil.getClassFields(processor.types(), classTypeElement);
+        final var fieldStream = TypeUtil.getClassFields(processor.types(), fieldTypeElement);
 
         // Since the field type may be either a class or record, we need a new ObjectInstantiation according to the field type
         final var fieldInstantiation = newInstance(recordGen, typeUtil.getFieldTypeElement(sourceField));
-        return fieldInstantiation.newObjectInternal(idFieldValue, classTypeName, fieldStream);
+        return fieldInstantiation.newObjectInternal(idFieldValue, fieldTypeName, fieldStream);
     }
 
     protected abstract String newObjectInternal(String idFieldValue, String classTypeName, Stream<VariableElement> fieldStream);

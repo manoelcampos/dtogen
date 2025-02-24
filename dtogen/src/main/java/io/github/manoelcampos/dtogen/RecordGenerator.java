@@ -340,8 +340,8 @@ public final class RecordGenerator {
                              public %s toModel(){
                                  %s
                              }
-                         
-                         """;
+                             
+                             """;
 
         allFieldsStream()
                 .filter(field -> AnnotationData.contains(field, DTO.MapToId.class) && !FieldUtil.isPrimitive(field))
@@ -349,7 +349,6 @@ public final class RecordGenerator {
 
         final var methodInternalCode = ObjectInstantiation.newInstance(this, modelTypeElement).generate();
         return template.formatted(modelTypeName, methodInternalCode);
-
     }
 
     private String generateFromModelMethod() {

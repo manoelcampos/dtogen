@@ -25,5 +25,4 @@ public final class RecordInstantiation extends ObjectInstantiation {
     protected String newObjectInternal(final String idFieldValue, final String classTypeName, final Stream<VariableElement> fieldStream) {
         return "new %s(%s)".formatted(classTypeName, generateFieldListInitialization(typeUtil, fieldStream, idFieldValue));
     }
-
 }
