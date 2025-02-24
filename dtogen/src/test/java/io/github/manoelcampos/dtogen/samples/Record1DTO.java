@@ -11,6 +11,10 @@ import java.time.LocalDate;
 ///
 /// Comments starting with /// are striped out from the code when this file is read during test execution.
 /// These comments won't be present inside the generated DTO record that is expected to be equal to this one.
+
+/**
+ * A {@link DTORecord Data Transfer Object} for {@link Record1}.
+ */
 @Generated(value = "io.github.manoelcampos.dtogen.DTOProcessor", comments = "DTO generated using DTOGen Annotation Processor")
 public record Record1DTO (Long id, String name, LocalDate date) implements DTORecord<Record1> {
     @Override

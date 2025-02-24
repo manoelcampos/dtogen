@@ -117,6 +117,13 @@ public final class RecordGenerator {
 
         final var recordBodyContent = new StringBuilder();
         final String implementsClause = "implements %s<%s>".formatted(DTORecord.class.getSimpleName(), modelTypeName);
+        recordBodyContent.append(
+            """
+            /**
+             * A {@link DTORecord Data Transfer Object} for {@link %s}.
+             */
+            """.formatted(modelTypeName)
+        );
         recordBodyContent.append(getGeneratedAnnotation());
         recordBodyContent.append("public record %s (%s) %s {%n".formatted(recordName, fieldsStr, implementsClause));
         recordBodyContent.append(generateToModelMethod());
