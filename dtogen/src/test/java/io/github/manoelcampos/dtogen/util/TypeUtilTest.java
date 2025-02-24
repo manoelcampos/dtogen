@@ -34,12 +34,12 @@ class TypeUtilTest {
     @Test
     void testGetPackageName() {
         final var typeElement = elements.getTypeElement(TypeUtil.class.getName());
-        assertEquals("io.github.manoelcampos.dtogen", getPackageName(typeElement));
+        assertEquals("io.github.manoelcampos.dtogen.util", getPackageName(typeElement));
     }
 
     @Test
     void testGetPackageNameString() {
-        assertEquals("io.github.manoelcampos.dtogen", getPackageName("io.github.manoelcampos.dtogen.util.ClassUtil"));
+        assertEquals("io.github.manoelcampos.dtogen.util", getPackageName(TypeUtil.class.getName()));
         assertEquals("", getPackageName("DTOProcessor"));
     }
 
