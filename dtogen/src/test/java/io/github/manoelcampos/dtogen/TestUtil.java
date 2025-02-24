@@ -1,5 +1,7 @@
 package io.github.manoelcampos.dtogen;
 
+import io.github.manoelcampos.dtogen.util.TypeUtil;
+
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -60,7 +62,7 @@ public class TestUtil {
      * @param elementName the name of the field to find
      * @return the field element found or null if not found
      */
-    static VariableElement findField(final Elements elements, final Class<?> clazz, final String elementName) {
+    public static VariableElement findField(final Elements elements, final Class<?> clazz, final String elementName) {
         final var classType = elements.getTypeElement(clazz.getCanonicalName());
         return (VariableElement) findElement(elements, classType, elementName, e -> e.getKind().isField());
     }
@@ -89,7 +91,7 @@ public class TestUtil {
         * since in the application using DTOGen, the DTORecord and its implementations
         * will belong to the same package, so no import is included in the generated
         * DTOs. Therefore, tests need to match that. */
-        try (var stream = Files.lines(Paths.get(fullPath)).filter(ClassUtil::isNotThreeSlashesComment).filter(TestUtil::isNotDTORecordImport)){
+        try (var stream = Files.lines(Paths.get(fullPath)).filter(TypeUtil::isNotThreeSlashesComment).filter(TestUtil::isNotDTORecordImport)){
             return String.join(System.lineSeparator(), stream.toList());
         } catch (final IOException e) {
             throw new UncheckedIOException(e);

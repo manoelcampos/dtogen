@@ -1,19 +1,19 @@
 package io.github.manoelcampos.dtogen;
 
-import javax.annotation.Nullable;
+import io.github.manoelcampos.dtogen.instantiation.ObjectInstantiation;
+import io.github.manoelcampos.dtogen.util.FieldUtil;
+import io.github.manoelcampos.dtogen.util.TypeUtil;
+
 import javax.lang.model.element.Element;
-import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
-import javax.lang.model.type.TypeMirror;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static io.github.manoelcampos.dtogen.AnnotationData.getFieldAnnotationsStr;
-import static io.github.manoelcampos.dtogen.ClassUtil.*;
-import static io.github.manoelcampos.dtogen.DTOProcessor.hasAnnotation;
+import static io.github.manoelcampos.dtogen.AnnotationData.hasAnnotation;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.*;
 
@@ -21,8 +21,7 @@ import static java.util.stream.Collectors.*;
  * Generates a {@link Record} java file from a given model class.
  * @author Manoel Campos
  */
-public class RecordGenerator {
-    private static final String ID_FIELD_NOT_FOUND = "Cannot find id field in %s. Since the %s.%s is annotated with %s, it must be a class with an id field.";
+public final class RecordGenerator {
     private final DTOProcessor processor;
 
     private final Set<String> excludedAnnotationNameSet = Set.of(
@@ -40,10 +39,10 @@ public class RecordGenerator {
     private final String modelPackageName;
 
     /**
-     * The type ot the model class to generate a record.
+     * The type ot the model object to generate a record.
      */
-    private final TypeElement modelClassTypeElement;
-    private final String modelClassName;
+    private final TypeElement modelTypeElement;
+    private final String modelTypeName;
     private final String recordName;
 
     /**
@@ -75,16 +74,18 @@ public class RecordGenerator {
      * @see #fieldAnnotationsImports()
      */
     private final Set<String> additionalImports = new TreeSet<>(Comparator.comparing(s -> s.replaceAll("javax", "java+")));
+    private final TypeUtil typeUtil;
 
     public RecordGenerator(final DTOProcessor processor, final Element classElement) {
         this.processor = processor;
+        this.typeUtil = processor.typeUtil();
         this.annnotationPredicate = Predicate.not(this::isExcludedAnnotation);
-        this.sourceClassFieldPredicate = RecordGenerator::isNotFieldExcluded;
-        this.modelClassTypeElement = (TypeElement) classElement;
-        this.modelClassName = modelClassTypeElement.getSimpleName().toString();
-        this.modelPackageName = ClassUtil.getPackageName(modelClassTypeElement);
-        this.recordName = modelClassName + "DTO";
-        this.sourceFieldAnnotationsMap = newFieldsMap(modelClassTypeElement);
+        this.sourceClassFieldPredicate = FieldUtil::isNotFieldExcluded;
+        this.modelTypeElement = (TypeElement) classElement;
+        this.modelTypeName = modelTypeElement.getSimpleName().toString();
+        this.modelPackageName = TypeUtil.getPackageName(modelTypeElement);
+        this.recordName = modelTypeName + "DTO";
+        this.sourceFieldAnnotationsMap = newFieldsMap(modelTypeElement);
     }
 
     /**
@@ -94,7 +95,7 @@ public class RecordGenerator {
      * @return the new fields map
      */
     private Map<VariableElement, List<AnnotationData>> newFieldsMap(final TypeElement modelClassTypeElement) {
-        final var classFieldsList = getClassFields(processor.typeUtils(), modelClassTypeElement).toList();
+        final var classFieldsList = TypeUtil.getClassFields(processor.types(), modelClassTypeElement).toList();
         return classFieldsList
                 .stream()
                 .collect(toMap(identity(), this::getFieldAnnotations, (a, b) -> a, LinkedHashMap::new));
@@ -115,7 +116,7 @@ public class RecordGenerator {
         final String fieldsStr = recordFieldsStr();
 
         final var recordBodyContent = new StringBuilder();
-        final String implementsClause = "implements %s<%s>".formatted(DTORecord.class.getSimpleName(), modelClassName);
+        final String implementsClause = "implements %s<%s>".formatted(DTORecord.class.getSimpleName(), modelTypeName);
         recordBodyContent.append(getGeneratedAnnotation());
         recordBodyContent.append("public record %s (%s) %s {%n".formatted(recordName, fieldsStr, implementsClause));
         recordBodyContent.append(generateToModelMethod());
@@ -157,63 +158,24 @@ public class RecordGenerator {
     /**
      * {@return a string with a default value for a given stream of fields, according to each field type}
      */
-    private String generateFieldListInitialization() {
-        return generateFieldListInitialization(fieldStream(), null);
-    }
-
-    /**
-     * {@return a string with a default value for a given stream of fields, according to each field type}
-     * @param fieldStream  stream of field to generate their initialization value
-     * @param idFieldValue a value for the id field (null if the default value must be used, according to the field type)
-     */
-    private String generateFieldListInitialization(final Stream<VariableElement> fieldStream, @Nullable final Object idFieldValue) {
-        // If no value is given for the id field, the field initialization list is used to instantiate a DTO object with all default values.
-        final boolean dtoInstantiation = idFieldValue == null;
-        return fieldStream
-                .map(field -> isNotIdField(field) || idFieldValue == null ? generateFieldInitialization(field, dtoInstantiation) : idFieldValue.toString())
-                .collect(joining(", "));
-    }
-
-    private boolean isNotIdField(final VariableElement field) {
-        return !"id".equals(getFieldName(field));
+    public String generateFieldListInitialization() {
+        return ObjectInstantiation.generateFieldListInitialization(typeUtil, fieldStream(), null);
     }
 
     /**
      * {@return  a stream of the fields of the model class being processed}
      * It doesn't sort elements to ensure the fields are returned in the same order they are declared in the class.
      */
-    private Stream<VariableElement> fieldStream() {
+    Stream<VariableElement> fieldStream() {
         return fieldStream(sourceClassFieldPredicate);
+    }
+
+    public Stream<VariableElement> allFieldsStream() {
+        return fieldStream(field -> true);
     }
 
     private Stream<VariableElement> fieldStream(final Predicate<VariableElement> fieldPredicate) {
         return sourceFieldAnnotationsMap.keySet().stream().filter(fieldPredicate);
-    }
-
-    /**
-     * {@return a default value for a given field, according to its type}
-     * @param sourceField field to generate the initialization value
-     * @param dtoInstantiation true to indicate the field initialization values will be used to instantiate
-     *                         a DTO object, false to indicate a model/entity object will be instantiated
-     */
-    private String generateFieldInitialization(final VariableElement sourceField, final boolean dtoInstantiation) {
-        final var sourceFieldTypeName = getTypeName(sourceField, false, true);
-        final boolean hasMapToId = AnnotationData.contains(sourceField, DTO.MapToId.class);
-
-        return switch (sourceFieldTypeName) {
-            case "String" -> "\"\"";
-            case "Long" -> "0L";
-            case "Integer", "int",  "long", "Short", "short", "Byte", "byte", "Double", "double" -> "0";
-            case "Character", "char" -> "'\\0'";
-            case "Boolean", "boolean" -> "false";
-            default -> {
-                final String value = findIdField(sourceField)
-                        .map(idField -> generateFieldInitialization(idField, dtoInstantiation))
-                        .orElse("0L");
-
-                yield hasMapToId && dtoInstantiation ? value : "null";
-            }
-        };
     }
 
     /**
@@ -234,15 +196,14 @@ public class RecordGenerator {
      * @param sourceField the field on the model class that will be created
      *                    on the DTO record. Such an object enables getting field metadata.
      * @param sourceFieldAnnotationData list of annotations on the field
-     *
      */
     private String generateRecordField(
-            final VariableElement sourceField,
-            final List<AnnotationData> sourceFieldAnnotationData)
+        final VariableElement sourceField,
+        final List<AnnotationData> sourceFieldAnnotationData)
     {
         final var sourceFieldAnnotationsStr = getFieldAnnotationsStr(sourceFieldAnnotationData);
         final var mapToIdAnnotation = DTO.MapToId.class;
-        final var fieldClassType = processor.getClassTypeElement(sourceField);
+        final var fieldClassType = processor.typeUtil().getTypeElement(sourceField);
         final boolean primitive = fieldClassType == null;
         final boolean containsMapToId = AnnotationData.contains(sourceField, mapToIdAnnotation);
 
@@ -256,12 +217,12 @@ public class RecordGenerator {
         }
 
         final var msg =
-                ID_FIELD_NOT_FOUND.formatted(
-                        fieldClassType.getSimpleName(), modelClassName,
+                FieldUtil.ID_FIELD_NOT_FOUND.formatted(
+                        fieldClassType.getSimpleName(), modelTypeName,
                         sourceField.getSimpleName(), AnnotationData.getName(mapToIdAnnotation)
                 );
 
-        return findIdField(fieldClassType)
+        return typeUtil.findIdField(fieldClassType)
                 .map(idField -> formatIdField(sourceField, idField, sourceFieldAnnotationData))
                 .orElseGet(() -> {
                     processor.error(sourceField, msg);
@@ -293,37 +254,14 @@ public class RecordGenerator {
         final var importsSet = sourceFieldAnnotationsMap
                 .keySet()
                 .stream()
-                .filter(field -> !isPrimitive(field))
-                .filter(field -> !getTypeName(field).startsWith("java.lang."))
-                .filter(field -> !isFieldClassPackageSameAsRecordPackage(getTypeName(field)))
-                .map(field -> getTypeName(field, true, false))
+                .filter(field -> !FieldUtil.isPrimitive(field))
+                .filter(field -> !typeUtil.getTypeName(field).startsWith("java.lang."))
+                .filter(field -> !isFieldTypePkgSameAsRecordPkg(typeUtil.getTypeName(field)))
+                .map(field -> typeUtil.getTypeName(field, true, false))
                 .collect(toSet());
 
         final String imports = importsSet.stream().map("import %s;"::formatted).collect(joining("%n"));
         return imports.isBlank() ? imports : System.lineSeparator() + imports;
-    }
-
-    private String getFieldName(final VariableElement field) {
-        return field.getSimpleName().toString();
-    }
-
-    /**
-     * Tries to find an "id" field inside a given enclosing type.
-     * @param fieldEnclosingType a class/record that is supposed to contain the "id" field
-     * @return an {@link Optional} containing "id" field if it exists; or an empty optional otherwise.
-     */
-    private Optional<VariableElement> findIdField(final VariableElement fieldEnclosingType) {
-        return findIdField(processor.getClassTypeElement(fieldEnclosingType));
-    }
-
-    /**
-     * Checks if a given type (class/record) has an "id" field.
-     * @param type the class/record type to check
-     * @return an {@link Optional} containing the id field if it exists; an empty optional otherwise.
-     */
-    private Optional<VariableElement> findIdField(final TypeElement type) {
-        final var classFieldsStream = getClassFields(processor.typeUtils(), type);
-        return classFieldsStream.filter(f -> f.getSimpleName().toString().equals("id")).findFirst();
     }
 
     private String formatIdField(final VariableElement sourceField, final VariableElement idField, final List<AnnotationData> sourceFieldAnnotationData) {
@@ -335,60 +273,30 @@ public class RecordGenerator {
      * @param fieldElement field element to get its type
      */
     private String getFieldType(final VariableElement fieldElement) {
-        final String typeName = getTypeName(fieldElement).replaceAll("java\\.lang\\.", "");
-        return ClassUtil.getSimpleClassName(typeName);
+        final String typeName = typeUtil.getTypeName(fieldElement).replaceAll("java\\.lang\\.", "");
+        return TypeUtil.getSimpleClassName(typeName);
     }
 
     /**
      * {@return true if the package of a field type is the same as the package of the model class}
      * @param fullyQualifiedFieldClassName the fully qualified name of the field type class
      */
-    private boolean isFieldClassPackageSameAsRecordPackage(final String fullyQualifiedFieldClassName) {
-        return modelPackageName.equals(ClassUtil.getPackageName(fullyQualifiedFieldClassName));
+    private boolean isFieldTypePkgSameAsRecordPkg(final String fullyQualifiedFieldClassName) {
+        return isFieldTypePkgEqualsTo(fullyQualifiedFieldClassName, modelPackageName);
+    }
+
+    /**
+     * {@return true if the package of a field type is equal to a given package}
+     *
+     * @param fullyQualifiedFieldTypeName the fully qualified name of the field type
+     * @param packageName                 the name of the package to check if the field type belongs to
+     */
+    public static boolean isFieldTypePkgEqualsTo(final String fullyQualifiedFieldTypeName, final String packageName) {
+        return packageName.equals(TypeUtil.getPackageName(fullyQualifiedFieldTypeName));
     }
 
     boolean isBooleanType(final VariableElement fieldElement) {
-        return "boolean".equalsIgnoreCase(getTypeName(fieldElement));
-    }
-
-    public String getTypeName(final VariableElement fieldElement) {
-        return getTypeName(fieldElement, true, true);
-    }
-
-    /**
-     * Gets the name of a type based on a {@link VariableElement} representing a variable/field.
-     * @param fieldElement variable/field to get its type
-     * @param qualified if the type name must include the full-qualified package name or just the type name
-     * @param includeTypeArgs indicates if the returned type name must include possible generic type arguments
-     * @return the type name
-     */
-    public String getTypeName(final VariableElement fieldElement, final boolean qualified, final boolean includeTypeArgs) {
-        final var typeMirror = fieldElement.asType();
-        if (typeMirror.getKind().isPrimitive()) {
-            return typeMirror.getKind().toString().toLowerCase();
-        }
-
-        final var declaredType = getAsDeclaredType(typeMirror);
-        if (declaredType == null) {
-            processor.error(fieldElement, "Unsupported type: " + typeMirror);
-            return typeMirror.toString();
-        }
-
-        final var element = (TypeElement) declaredType.asElement();
-        // Check if the type has generic parameters
-        final String typeArguments = includeTypeArgs ? genericTypeArguments(declaredType) : "";
-        final var name = qualified ? element.getQualifiedName() : element.getSimpleName();
-        return name + typeArguments;
-    }
-
-    /**
-     * Gets a {@link TypeMirror} as a {@link DeclaredType} if that {@link TypeMirror}
-     * is in fact a {@link DeclaredType} (a type that represents a record, class, interface...).
-     * @param typeMirror the type to check and get as a {@link DeclaredType}
-     * @return a {@link DeclaredType} if the given type is a {@link DeclaredType}; null otherwise.
-     */
-    @Nullable DeclaredType getAsDeclaredType(final TypeMirror typeMirror) {
-        return typeMirror instanceof DeclaredType declaredType ? declaredType : null;
+        return "boolean".equalsIgnoreCase(typeUtil.getTypeName(fieldElement));
     }
 
     /**
@@ -402,7 +310,7 @@ public class RecordGenerator {
      * @return the first generic type (ModelClass from a declaration such as {@code List<ModelClass>})
      * (the generic type argument) if ModelClass is annotated with {@link DTO}; an empty string otherwise.
      */
-    private String getFirstGenericTypeArgAnnotatedWithDTO(final VariableElement fieldElement) {
+    public String getFirstGenericTypeArgAnnotatedWithDTO(final VariableElement fieldElement) {
         final var typeMirror = fieldElement.asType();
         if (!(typeMirror instanceof DeclaredType declaredType)) {
             return "";
@@ -411,59 +319,11 @@ public class RecordGenerator {
         if (declaredType.getTypeArguments().isEmpty())
             return "";
 
-        final var firstTypeArg = processor.getTypeMirrorAsElement(declaredType.getTypeArguments().getFirst());
+        final var firstTypeArg = typeUtil.getTypeMirrorAsTypeElement(declaredType.getTypeArguments().getFirst());
         return hasAnnotation(firstTypeArg, DTO.class) ? firstTypeArg.getSimpleName().toString() : "";
     }
 
-    /**
-     * Gets the generic type arguments of a given type.
-     * If the type is {@code List<Customer>}, List is the declared type and Customer is the generic argument.
-     *
-     * @param declaredType the type to get its generic arguments
-     * @return a String representing all the generic type arguments in format {@code <Type1, TypeN>} or an empty string if there are no generic type arguments.
-     */
-    private String genericTypeArguments(final DeclaredType declaredType) {
-        final var typeArguments = declaredType.getTypeArguments();
-        if (typeArguments.isEmpty()) {
-            return "";
-        }
 
-        // Recursively gets the generic type arguments for each generic type argument.
-        final var genericTypeArgs =
-                typeArguments
-                        .stream()
-                        .map(this::getGenericTypeArgTypes)
-                        .collect(joining(", "));
-
-        return "<" + genericTypeArgs + ">";
-    }
-
-    /**
-     * Gets the type arguments of a generic type arg.
-     * If the original type is something such as Type1<Type2<Type3>, Type4>,
-     * it gets a string representation of Type1 with its 2 types: Type2<Type3> and Type4.
-     * Since Type2 has its own generic type argument as well,
-     * the method returns a String Type1<Type2<Type3>, Type4>
-     * instead of just Type1<Type2, Type4>.
-     * @param genericTypeArg the generic type argument to get its own type arguments (if any)
-     * @return a string representation of the generic type argument with its own type arguments (if any)
-    */
-    private String getGenericTypeArgTypes(final TypeMirror genericTypeArg) {
-        final var declaredGenericTypeArg = (DeclaredType) genericTypeArg;
-        // Gets the generic types of the generic type arg
-        final var genericSubTypes = genericTypeArguments(declaredGenericTypeArg);
-        return "%s%s".formatted(genericTypeArgument(genericTypeArg), genericSubTypes);
-    }
-
-    /**
-     * @see #genericTypeArguments(DeclaredType)
-     */
-    private String genericTypeArgument(final TypeMirror genericType) {
-        final var genericTypeElement = processor.getTypeMirrorAsElement(genericType);
-        final var qualifiedName = genericTypeElement.getQualifiedName().toString();
-        final var finalName = isFieldClassPackageSameAsRecordPackage(qualifiedName) ? ClassUtil.getSimpleClassName(qualifiedName) : qualifiedName;
-        return  finalName + (hasAnnotation(genericTypeElement, DTO.class) ? DTO.class.getSimpleName() : "");
-    }
 
     /**
      * {@return the annotations of a field}
@@ -474,31 +334,20 @@ public class RecordGenerator {
     }
 
     private String generateToModelMethod() {
-        final var code = """
-                             @Override
-                             public %s toModel(){
-                                 final var model = new %s(%s
-                         %s
+        final var template = """
+                                 @Override
+                                 public %s toModel(){
                                  %s
-                         
-                                 return model;
-                             }
-                         
-                         """;
+                                 }
+                             
+                             """;
 
-        final boolean record = isRecord(modelClassTypeElement);
-        // Gets all fields in the model class to allow instantiating it (including fields annotated with @DTO.Ignore)
-        final String fieldValues =
-                fieldStream(field -> true)
-                    .map(this::generateValueForModelField)
-                    .collect(joining(isRecord(modelClassTypeElement) ? ", " : "%n"));
+        allFieldsStream()
+                .filter(field -> AnnotationData.contains(field, DTO.MapToId.class) && !FieldUtil.isPrimitive(field))
+                .forEach(field -> addElementToImport(typeUtil.getTypeName(field, true, false)));
 
-        // If it's a record, the constructor call closing doesn't happen at the beginning of the call, but at the end (afer all parameters)
-        final var beginningClosing = record ? "" : ");";
-
-        // If it's a class, the constructor call closing happens right at the same line of the method call (since we are calling the no-args constructor)
-        final var endingClosing = record ? ");" : "";
-        return code.formatted(modelClassName, modelClassName, beginningClosing, fieldValues, endingClosing);
+        final var methodInternalCode = ObjectInstantiation.newInstance(this, modelTypeElement).generate();
+        return template.formatted(modelTypeName, methodInternalCode);
     }
 
     private String generateFromModelMethod() {
@@ -516,7 +365,7 @@ public class RecordGenerator {
              """;
 
         final var constructorValues = fieldStream().map(this::dtoConstructorParam).collect(joining(",%n".formatted()));
-        return methodCode.formatted(recordName, modelClassName, constructorValues);
+        return methodCode.formatted(recordName, modelTypeName, constructorValues);
     }
 
     /**
@@ -529,12 +378,12 @@ public class RecordGenerator {
 
         final var modelGetterName = "model." + getterName(sourceField);
         // If declaredType is null, the field type is primitive and the MapToId annotation is not allowed
-        final var fieldDeclaredType = getAsDeclaredType(sourceField.asType());
+        final var fieldDeclaredType = TypeUtil.getAsDeclaredType(sourceField.asType());
         if (sourceFieldHasMapToId && fieldDeclaredType != null) {
             // Default value for a numeric field (according to its type)
-            final String defaultNumVal = generateFieldInitialization(sourceField, true);
+            final String defaultNumVal = ObjectInstantiation.generateFieldInitialization(typeUtil, sourceField, null);
             final String idFieldValue =
-                    findIdField(sourceField)
+                    typeUtil.findIdField(sourceField)
                             .map(idField -> "          %1$s == null ? %2$s : %1$s.%3$s".formatted(modelGetterName, defaultNumVal, getterName(idField)))
                             .orElse("");
 
@@ -560,8 +409,8 @@ public class RecordGenerator {
      */
     private String getterName(final VariableElement sourceField) {
         final var sourceFieldName = sourceField.getSimpleName().toString();
-        final boolean isRecord = isRecord(sourceField.getEnclosingElement());
-        final var formatedFieldName = isRecord ? sourceFieldName : ClassUtil.getUpCaseFieldName(sourceFieldName);
+        final boolean isRecord = TypeUtil.isRecord(sourceField.getEnclosingElement());
+        final var formatedFieldName = isRecord ? sourceFieldName : FieldUtil.getUpCaseFieldName(sourceFieldName);
 
         final var prefixForGetterInsideClass = isBooleanType(sourceField) ? "is" : "get";
         final var prefix = isRecord ? "" : prefixForGetterInsideClass;
@@ -569,134 +418,37 @@ public class RecordGenerator {
     }
 
     /**
-     * Checks if a given element is a {@link Record}.
-     * @param element element to check
-     * @return true if a given element is a record, false otherwise
-     */
-    private static boolean isRecord(final Element element) {
-        return element.getKind() == ElementKind.RECORD;
-    }
-
-    /**
-     * {@return value to be given to a field of a model/entity class which will be instantiated}
-     * @param sourceField model field to generate the value to be passed to the class/record constructor
-     */
-    private String generateValueForModelField(final VariableElement sourceField) {
-        final var builder = new StringBuilder();
-        final var sourceFieldName = getFieldName(sourceField);
-        final var upCaseSourceFieldName = ClassUtil.getUpCaseFieldName(sourceFieldName);
-        final boolean sourceFieldHasMapToId = AnnotationData.contains(sourceField, DTO.MapToId.class);
-
-        final var setterValue = setterValue(sourceField, sourceFieldHasMapToId);
-        final var isRecord = isRecord(sourceField.getEnclosingElement());
-
-        final String modelSetId;
-        final boolean primitive = isPrimitive(sourceField);
-        if(setterValue.isBlank()){
-            return "";
-        }
-
-        if(sourceFieldHasMapToId && !primitive) {
-            modelSetId = "";
-            final String fieldValue = newObject(sourceField, setterValue);
-
-            // Instantiates an object of the type of the model field so that the id can be set
-            final var modelSetterCall = "          model.set%s(%s);%n".formatted(upCaseSourceFieldName, fieldValue);
-            builder.append(isRecord ? "%n%s".formatted(fieldValue) : modelSetterCall);
-        }
-        else modelSetId = "model.set%s".formatted(upCaseSourceFieldName);
-
-        if(!modelSetId.isBlank()) {
-            final String value = "        %s(this.%s);".formatted(modelSetId, setterValue);
-            builder.append(isRecord ? setterValue : value);
-        }
-
-        return builder.toString();
-    }
-
-    /**
-     * Generates the code to instantiate a model object from the type of given field.
-     * @param sourceField field to get its class/record type to instantiate an object
-     * @param idFieldValue the value for the id field
-     * @return the generated constructor call code
-     */
-    private String newObject(final VariableElement sourceField, final String idFieldValue) {
-        final var classTypeName = addElementToImport(getTypeName(sourceField));;
-        final var classTypeElement = processor.getClassTypeElement(sourceField);
-        final var isPrimitive = classTypeElement == null;
-
-        // If the field is primitive, return the default value for that type (since there is no instantiation for such types).
-        if(isPrimitive)
-            return generateFieldInitialization(sourceField, false);
-
-        final var fieldStream = getClassFields(processor.typeUtils(), classTypeElement);
-        final var recordInstantiation = "new %s(%s)".formatted(classTypeName, generateFieldListInitialization(fieldStream, idFieldValue));
-        final var classInstantiation = " newObject(%s, () -> { var o = new %s(); o.setId(%s); return o; })".formatted(idFieldValue, classTypeName, idFieldValue);
-        return classTypeElement.getKind() == ElementKind.RECORD ?
-                recordInstantiation :
-                classInstantiation;
-    }
-
-    /**
      * Adds an elemento to the {@link #additionalImports} list
      * and returns the simple name of that element.
      * @param elementQualifiedName full qualified name (including package) of the element to add to the imports list
-     * @return the simple name of the element.
      */
-    private String addElementToImport(final String elementQualifiedName) {
-        final String elementPackage = getPackageName(elementQualifiedName);
+    private void addElementToImport(final String elementQualifiedName) {
+        final String elementPackage = TypeUtil.getPackageName(elementQualifiedName);
         if(!elementPackage.equals(modelPackageName) && !elementPackage.isBlank() && !elementQualifiedName.startsWith("java.lang"))
             additionalImports.add(elementQualifiedName);
-
-        return getSimpleClassName(elementQualifiedName);
     }
 
     /**
-     * Generates the Java code representing the value to be passed to a setter method inside the {@link #generateToModelMethod()}.
+     * Checks if an annotation is to be excluded from the DTO fields.
+     * DTO or a JPA/Hibernation annotations has only effect on database tables and
+     * must not be included in the DTO record.
      *
-     * @param sourceField           the field to generate the value to be passed to the setter method
-     * @param sourceFieldHasMapToId indicates if the field has the {@link DTO.MapToId} annotation.
-     * @return the value to be passed to the setter method (as Java code)
-     */
-    private String setterValue(final VariableElement sourceField, final boolean sourceFieldHasMapToId) {
-        if(isFieldExcluded(sourceField))
-            return isRecord(sourceField.getEnclosingElement()) ? generateFieldInitialization(sourceField, false) : "";
-
-        final var sourceFieldName = getFieldName(sourceField);
-        final var genericTypeArg = getFirstGenericTypeArgAnnotatedWithDTO(sourceField);
-        final boolean notPrimitive = !isPrimitive(sourceField);
-        if (genericTypeArg.isBlank()) {
-            return "%s%s".formatted(sourceFieldName, sourceFieldHasMapToId && notPrimitive ? "Id" : "");
-        }
-
-        // Generates a stream chain to map a DTO object to a Model
-        return "%s.stream().map(%s::toModel).toList()".formatted(sourceFieldName, genericTypeArg + DTO.class.getSimpleName());
-    }
-
-    /**
-     * Annotations to be excluded from the DTO fields.
-     * Check if an annotation is a DTO one or a JPA/Hibernation annotation
-     * that has only effect on database tables and should not be included in the DTO record.
      * @param annotation the annotation to check
-     * @return true if the annotation is a JPA/Hibernation annotation, false otherwise.
+     * @return true if the annotation is to be excluded, false otherwise
      */
     private boolean isExcludedAnnotation(final AnnotationData annotation) {
         return excludedAnnotationNameSet.stream().anyMatch(annotation.name()::contains);
     }
 
-    /**
-     * {@return true if a field must not be excluded from the generated DTO record, false otherwise}
-     * @param field the field to check
-     */
-    static boolean isNotFieldExcluded(final VariableElement field) {
-        return !isFieldExcluded(field);
+    public DTOProcessor getProcessor() {
+        return processor;
     }
 
-    /**
-     * {@return true if a field must be excluded from the generated DTO record, false otherwise}
-     * @param field the field to check
-     */
-    static boolean isFieldExcluded(final VariableElement field) {
-        return hasAnnotation(field, DTO.Exclude.class);
+    public TypeElement getModelTypeElement() {
+        return modelTypeElement;
+    }
+
+    public String getModelTypeName() {
+        return modelTypeName;
     }
 }
