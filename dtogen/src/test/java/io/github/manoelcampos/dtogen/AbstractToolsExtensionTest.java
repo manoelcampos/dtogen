@@ -5,6 +5,7 @@ import com.karuslabs.elementary.junit.ToolsExtension;
 import com.karuslabs.utilitary.type.TypeMirrors;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 
@@ -19,4 +20,8 @@ public abstract class AbstractToolsExtensionTest {
     protected final Elements elements = Tools.elements();
     protected final Types types = Tools.types();
     protected final TypeMirrors typeMirrors = Tools.typeMirrors();
+
+    protected TypeElement getClassTypeElement(final Class<?> clazz) {
+        return elements.getTypeElement(clazz.getName());
+    }
 }

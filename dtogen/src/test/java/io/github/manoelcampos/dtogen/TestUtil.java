@@ -101,8 +101,4 @@ public class TestUtil {
     private static boolean isNotDTORecordImport(final String line) {
         return !line.equals("import io.github.manoelcampos.dtogen.DTORecord;");
     }
-
-    public static TypeElement getClassTypeElement(final Elements elements, final Class<?> clazz) {
-        return elements.getTypeElement(clazz.getName());
-    }
 }

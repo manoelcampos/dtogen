@@ -1,13 +1,11 @@
 package io.github.manoelcampos.dtogen.util;
 
 import io.github.manoelcampos.dtogen.AbstractToolsExtensionTest;
-import io.github.manoelcampos.dtogen.TestUtil;
 import io.github.manoelcampos.dtogen.samples.Class1;
 import io.github.manoelcampos.dtogen.samples.ExcludedFieldSampleClass;
 import io.github.manoelcampos.dtogen.samples.Record1;
 import org.junit.jupiter.api.Test;
 
-import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 
 import static io.github.manoelcampos.dtogen.TestUtil.findField;
@@ -67,9 +65,5 @@ class FieldUtilTest extends AbstractToolsExtensionTest {
 
         final var idField = findField(elements, Record1.class, "id");
         assertFalse(FieldUtil.isNotIdField(idField));
-    }
-
-    private TypeElement getClassTypeElement(final Class<?> clazz) {
-        return TestUtil.getClassTypeElement(elements, clazz);
     }
 }

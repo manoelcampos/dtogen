@@ -5,7 +5,6 @@ import com.sun.source.util.DocTrees;
 import com.sun.source.util.JavacTask;
 import com.sun.source.util.TreePath;
 
-import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
@@ -27,21 +26,47 @@ public class JavaDocExtractor {
     /**
      * A map where the key is the name of a field and the value the JavaDoc comment for that field.
      */
-    private final Map<Name, String> fieldCommentsMap = new HashMap<>();
+    private final Map<String, String> fieldCommentsMap = new HashMap<>();
+
+    /**
+     * A type element representing a Java class, record, interface, etc.
+     */
+    private final TypeElement typeElement;
+
+
+    /**
+     * Indicates if the Java fiel is inside the test dir or not.
+     */
+    private final boolean testDir;
 
     /**
      * Creates an instance and extracts JavaDoc comments from the given Java element.
-     * @param typeElement a type element representing a Java class, record, interface, etc
+     * @param typeElement see {@link #typeElement}
      */
     public JavaDocExtractor(final TypeElement typeElement) {
-        final var javaFilePath = getJavaFilePathFromQualifiedName(typeElement);
+        this(typeElement, false);
+    }
+
+    /**
+     * Creates an instance and extracts JavaDoc comments from the given Java element.
+     * @param typeElement see {@link #typeElement}
+     * @param testDir see {@link #testDir}
+     */
+    JavaDocExtractor(final TypeElement typeElement, final boolean testDir) {
+        this.typeElement = typeElement;
+        this.testDir = testDir;
+        final var javaFilePath = getJavaFilePathFromQualifiedName();
         System.out.println(javaFilePath);
         extract(javaFilePath);
     }
 
-    private static String getJavaFilePathFromQualifiedName(final TypeElement typeElement) {
+    /**
+     * {@return the path of the Java source file for the given qualified name}
+     */
+    String getJavaFilePathFromQualifiedName() {
         final String path = typeElement.getQualifiedName().toString().replace(".", "/");
-        return "src/main/java/%s.java".formatted(path);
+        final String dir = testDir ? "test" : "main";
+        return "src/%s/java/%s.java".formatted(dir, path);
     }
 
     /**
@@ -88,16 +113,22 @@ public class JavaDocExtractor {
     private void parseField(final CompilationUnitTree unitTree, final DocTrees docTrees, final Tree member) {
         if (member instanceof VariableTree) {
             final var optional = extractJavaDoc(docTrees, TreePath.getPath(unitTree, member));
-            optional.ifPresent(javadoc -> fieldCommentsMap.put(((VariableTree) member).getName(), javadoc));
+            optional.ifPresent(javadoc -> fieldCommentsMap.put(((VariableTree) member).getName().toString(), javadoc));
         }
     }
 
     private Optional<String> extractJavaDoc(final DocTrees docTrees, final TreePath path) {
         final var docCommentTree = docTrees.getDocCommentTree(path);
-        return docCommentTree == null || docCommentTree.toString().isBlank() ? Optional.empty() : Optional.of(docCommentTree.toString());
+        final boolean hasJavaDoc = docCommentTree == null || docCommentTree.toString().isBlank();
+
+        /* Replaces all line brakes that starts the new line with a space by just a line break,
+        * since the trim() only removes spaces at begin and end, not between lines. */
+        return hasJavaDoc ?
+                Optional.empty() :
+                Optional.of(docCommentTree.toString().trim().replaceAll("\n ", "\n"));
     }
 
-    public Stream<Entry<Name, String>> getFieldCommentsStream() {
+    public Stream<Entry<String, String>> getFieldCommentsStream() {
         return fieldCommentsMap.entrySet().stream();
     }
 

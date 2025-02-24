@@ -2,7 +2,6 @@ package io.github.manoelcampos.dtogen.util;
 
 import io.github.manoelcampos.dtogen.AbstractProcessorTest;
 import io.github.manoelcampos.dtogen.DTOProcessor;
-import io.github.manoelcampos.dtogen.TestUtil;
 import io.github.manoelcampos.dtogen.samples.Class1;
 import io.github.manoelcampos.dtogen.samples.SampleClass;
 import org.junit.jupiter.api.Test;
@@ -105,9 +104,5 @@ class TypeUtilTest extends AbstractProcessorTest {
 
         final var class1Element = getClassTypeElement(Class1.class);
         assertFalse(typeUtil.findIdField(class1Element).isEmpty());
-    }
-
-    private TypeElement getClassTypeElement(final Class<?> clazz) {
-        return TestUtil.getClassTypeElement(elements, clazz);
     }
 }
