@@ -193,7 +193,7 @@ public abstract sealed class ObjectInstantiation permits ClassInstantiation, Rec
      *                         a DTO object, false to indicate a model/entity object will be instantiated
      */
     static String generateFieldInitialization(final TypeUtil typeUtil, final VariableElement sourceField, final boolean dtoInstantiation) {
-        final var sourceFieldTypeName = typeUtil.getTypeName(sourceField, false, true);
+        final var sourceFieldTypeName = typeUtil.getTypeName(sourceField, false, false);
         final boolean hasMapToId = AnnotationData.contains(sourceField, DTO.MapToId.class);
 
         return switch (sourceFieldTypeName) {
@@ -207,7 +207,6 @@ public abstract sealed class ObjectInstantiation permits ClassInstantiation, Rec
                                              .map(idField -> generateFieldInitialization(typeUtil, idField, dtoInstantiation))
                                              .orElse("0L");
 
-                System.out.printf("%s %s = %s. MapToId: %s DtoInstantiation: %s%n", sourceFieldTypeName, sourceField.getSimpleName(), value, hasMapToId, dtoInstantiation);
                 yield hasMapToId && dtoInstantiation ? value : "null";
             }
         };

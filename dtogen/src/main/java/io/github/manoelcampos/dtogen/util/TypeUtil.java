@@ -72,7 +72,7 @@ public final class TypeUtil {
         final var typeMirror = fieldElement.asType();
         final var declaredType = getAsDeclaredType(typeMirror);
         if (declaredType == null) // is primitive
-            return typeMirror.toString().toLowerCase();
+            return typeMirror.getKind().toString().toLowerCase();
 
         final var typeElement = (TypeElement) declaredType.asElement();
         // Check if the type has generic parameters
