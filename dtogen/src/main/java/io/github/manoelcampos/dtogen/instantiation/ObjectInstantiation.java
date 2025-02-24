@@ -156,7 +156,7 @@ public abstract sealed class ObjectInstantiation permits ClassInstantiation, Rec
         final var fieldStream = TypeUtil.getClassFields(processor.types(), classTypeElement);
 
         // Since the field type may be either a class or record, we need a new ObjectInstantiation according to the field type
-        final var fieldInstantiation = newInstance(recordGen, typeUtil.getTypeMirrorAsTypeElement(sourceField.asType()));
+        final var fieldInstantiation = newInstance(recordGen, typeUtil.getFieldTypeElement(sourceField));
         return fieldInstantiation.newObjectInternal(idFieldValue, classTypeName, fieldStream);
     }
 
