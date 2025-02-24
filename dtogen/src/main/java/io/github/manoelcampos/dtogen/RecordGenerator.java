@@ -196,11 +196,10 @@ public final class RecordGenerator {
      * @param sourceField the field on the model class that will be created
      *                    on the DTO record. Such an object enables getting field metadata.
      * @param sourceFieldAnnotationData list of annotations on the field
-     *
      */
     private String generateRecordField(
-            final VariableElement sourceField,
-            final List<AnnotationData> sourceFieldAnnotationData)
+        final VariableElement sourceField,
+        final List<AnnotationData> sourceFieldAnnotationData)
     {
         final var sourceFieldAnnotationsStr = getFieldAnnotationsStr(sourceFieldAnnotationData);
         final var mapToIdAnnotation = DTO.MapToId.class;
