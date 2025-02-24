@@ -1,26 +1,20 @@
 package io.github.manoelcampos.dtogen.util;
 
-import com.karuslabs.elementary.junit.Tools;
-import com.karuslabs.elementary.junit.ToolsExtension;
+import io.github.manoelcampos.dtogen.AbstractToolsExtensionTest;
 import io.github.manoelcampos.dtogen.TestUtil;
 import io.github.manoelcampos.dtogen.samples.Class1;
 import io.github.manoelcampos.dtogen.samples.ExcludedFieldSampleClass;
 import io.github.manoelcampos.dtogen.samples.Record1;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.util.Elements;
 
 import static io.github.manoelcampos.dtogen.TestUtil.findField;
 import static java.util.stream.Collectors.toMap;
 import static org.junit.jupiter.api.Assertions.*;
 
-@ExtendWith(ToolsExtension.class)
-class FieldUtilTest {
-    private final Elements elements = Tools.elements();
-
+class FieldUtilTest extends AbstractToolsExtensionTest {
     @Test
     void testGetUpCaseFieldName() {
         assertEquals("Name", FieldUtil.getUpCaseFieldName("name"));

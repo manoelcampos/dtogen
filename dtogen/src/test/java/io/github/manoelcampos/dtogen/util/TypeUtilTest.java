@@ -1,42 +1,21 @@
 package io.github.manoelcampos.dtogen.util;
 
-import com.karuslabs.elementary.junit.Tools;
-import com.karuslabs.elementary.junit.ToolsExtension;
-import com.karuslabs.elementary.junit.annotations.Processors;
+import io.github.manoelcampos.dtogen.AbstractProcessorTest;
 import io.github.manoelcampos.dtogen.DTOProcessor;
 import io.github.manoelcampos.dtogen.TestUtil;
 import io.github.manoelcampos.dtogen.samples.Class1;
 import io.github.manoelcampos.dtogen.samples.SampleClass;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mockito;
 
-import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.util.Elements;
-import javax.lang.model.util.Types;
 import java.util.List;
 
 import static io.github.manoelcampos.dtogen.TestUtil.findField;
 import static io.github.manoelcampos.dtogen.util.TypeUtil.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-@ExtendWith(ToolsExtension.class)
-@Processors({DTOProcessor.class})
-class TypeUtilTest {
-    private final ProcessingEnvironment env = Mockito.mock(ProcessingEnvironment.class);
-    private DTOProcessor processor;
-
-    private final Elements elements = Tools.elements();
-    private final Types types = Tools.types();
-
-    @BeforeEach
-    void setUp() {
-        Mockito.when(env.getTypeUtils()).thenReturn(Tools.types());
-        this.processor = new DTOProcessor(env);
-    }
+class TypeUtilTest extends AbstractProcessorTest {
 
     @Test
     void testGetPackageName() {
