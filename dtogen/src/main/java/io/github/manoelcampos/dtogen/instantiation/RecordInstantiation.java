@@ -34,8 +34,6 @@ public final class RecordInstantiation extends ObjectInstantiation {
      * @param sourceField model field to generate the value to be passed to the class/record constructor
      */
     protected String generateFieldValueInternal(final VariableElement sourceField) {
-        final var sourceFieldName = FieldUtil.getFieldName(sourceField);
-        final var upCaseSourceFieldName = FieldUtil.getUpCaseFieldName(sourceFieldName);
         final boolean sourceFieldAnnotatedWithMapToId = AnnotationData.contains(sourceField, DTO.MapToId.class);
         final var fieldValue = fieldValue(sourceField, sourceFieldAnnotatedWithMapToId);
         final boolean primitive = FieldUtil.isPrimitive(sourceField);
@@ -44,7 +42,6 @@ public final class RecordInstantiation extends ObjectInstantiation {
             final String newObjectCall = newObject(sourceField, fieldValue);
 
             // Instantiates an object of the type of the model field so that the id can be set
-            final var modelSetterCall = "          model.set%s(%s);%n".formatted(upCaseSourceFieldName, newObjectCall);
             return "%n%s".formatted(newObjectCall);
         }
 
