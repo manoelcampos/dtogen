@@ -120,8 +120,7 @@ public final class RecordGenerator {
         recordBodyContent.append(
             """
             /**
-             * A {@link DTORecord Data Transfer Object} for {@link %s}.
-            %s
+             * A {@link DTORecord Data Transfer Object} for {@link %s}.%s
              */
             """.formatted(modelTypeName, fieldsJavaDoc())
         );
@@ -153,7 +152,7 @@ public final class RecordGenerator {
                 extractor.getFieldCommentsStream()
                          .map(e -> " * @param %s %s".formatted(e.getKey(), e.getValue().replaceAll("\n", " ")))
                          .collect(joining(System.lineSeparator()));
-        return javadocs.isBlank() ? "" : " *%n%s".formatted(javadocs);
+        return javadocs.isBlank() ? "" : " %n * %n%s".formatted(javadocs);
     }
 
     private String getGeneratedAnnotation() {
