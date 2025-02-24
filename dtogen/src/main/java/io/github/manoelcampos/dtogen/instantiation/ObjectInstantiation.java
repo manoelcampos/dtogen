@@ -76,6 +76,8 @@ public abstract sealed class ObjectInstantiation permits ClassInstantiation, Rec
 
     /**
      * {@return value to be given to a field of a model class/record which will be instantiated}
+     * Depending on whether the object being instantiated is a record or class,
+     * the value is given to the constructor or to a specific setter method, respectively.
      * @param sourceField model field to generate the value to be passed to the class/record constructor
      */
     String generateFieldValue(final VariableElement sourceField) {
