@@ -383,7 +383,7 @@ public final class RecordGenerator {
         final var fieldDeclaredType = TypeUtil.getAsDeclaredType(sourceField.asType());
         if (sourceFieldHasMapToId && fieldDeclaredType != null) {
             // Default value for a numeric field (according to its type)
-            final String defaultNumVal = ObjectInstantiation.generateFieldInitialization(typeUtil, sourceField, true);
+            final String defaultNumVal = ObjectInstantiation.generateFieldInitialization(typeUtil, sourceField, null);
             final String idFieldValue =
                     typeUtil.findIdField(sourceField)
                             .map(idField -> "          %1$s == null ? %2$s : %1$s.%3$s".formatted(modelGetterName, defaultNumVal, getterName(idField)))

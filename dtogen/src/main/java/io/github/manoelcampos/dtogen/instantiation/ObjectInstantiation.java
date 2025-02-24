@@ -154,7 +154,10 @@ public abstract sealed class ObjectInstantiation permits ClassInstantiation, Rec
             return generateFieldInitialization(typeUtil, sourceField, false);
 
         final var fieldStream = TypeUtil.getClassFields(processor.types(), classTypeElement);
-        return newObjectInternal(idFieldValue, classTypeName, fieldStream);
+
+        // Since the field type may be either a class or record, we need a new ObjectInstantiation according to the field type
+        final var fieldInstantiation = newInstance(recordGen, typeUtil.getTypeMirrorAsTypeElement(sourceField.asType()));
+        return fieldInstantiation.newObjectInternal(idFieldValue, classTypeName, fieldStream);
     }
 
     protected abstract String newObjectInternal(String idFieldValue, String classTypeName, Stream<VariableElement> fieldStream);
@@ -170,6 +173,11 @@ public abstract sealed class ObjectInstantiation permits ClassInstantiation, Rec
                 .collect(joining(", "));
     }
 
+    /**
+     * {@return a string with a default value for a given stream of fields, according to each field type}
+     * @param sourceField  the field to generate the initialization value for
+     * @param idFieldValue a value for the id field (null if the default value must be used, according to the field type)
+     */
     public static String generateFieldInitialization(final TypeUtil typeUtil, final VariableElement sourceField, final Object idFieldValue) {
         // If no value is given for the id field, the field initialization list is used to instantiate a DTO object with all default values.
         final boolean dtoInstantiation = idFieldValue == null;
@@ -197,6 +205,7 @@ public abstract sealed class ObjectInstantiation permits ClassInstantiation, Rec
                                              .map(idField -> generateFieldInitialization(typeUtil, idField, dtoInstantiation))
                                              .orElse("0L");
 
+                System.out.printf("%s %s = %s. MapToId: %s DtoInstantiation: %s%n", sourceFieldTypeName, sourceField.getSimpleName(), value, hasMapToId, dtoInstantiation);
                 yield hasMapToId && dtoInstantiation ? value : "null";
             }
         };
