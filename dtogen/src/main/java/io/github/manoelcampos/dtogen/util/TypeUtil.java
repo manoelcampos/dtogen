@@ -40,11 +40,12 @@ public final class TypeUtil {
     }
 
     /**
-     * {@return a TypeElement that represents a field type, or null if the field is primitive}
-     * @param fieldElement the element representing the field.
+     * {@return a TypeElement that represents the type of an element that represents a field or reference type (class, record, interface...);
+     * or null if the type of the element is primitive}
+     * @param element the element representing the field or reference type.
      */
-    public @Nullable TypeElement getFieldTypeElement(final VariableElement fieldElement) {
-        return getTypeMirrorAsTypeElement(fieldElement.asType());
+    public @Nullable TypeElement getTypeElement(final Element element) {
+        return getTypeMirrorAsTypeElement(element.asType());
     }
 
     public TypeElement getTypeMirrorAsTypeElement(final TypeMirror typeMirror) {
@@ -148,7 +149,7 @@ public final class TypeUtil {
      * @return an {@link Optional} containing "id" field if it exists; or an empty optional otherwise.
      */
     public Optional<VariableElement> findIdField(final VariableElement fieldEnclosingType) {
-        return findIdField(getFieldTypeElement(fieldEnclosingType));
+        return findIdField(getTypeElement(fieldEnclosingType));
     }
 
     /**

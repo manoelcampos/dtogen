@@ -203,7 +203,7 @@ public final class RecordGenerator {
     {
         final var sourceFieldAnnotationsStr = getFieldAnnotationsStr(sourceFieldAnnotationData);
         final var mapToIdAnnotation = DTO.MapToId.class;
-        final var fieldClassType = processor.typeUtil().getFieldTypeElement(sourceField);
+        final var fieldClassType = processor.typeUtil().getTypeElement(sourceField);
         final boolean primitive = fieldClassType == null;
         final boolean containsMapToId = AnnotationData.contains(sourceField, mapToIdAnnotation);
 
