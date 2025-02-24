@@ -4,7 +4,6 @@ import io.github.manoelcampos.dtogen.AnnotationData;
 import io.github.manoelcampos.dtogen.DTO;
 import io.github.manoelcampos.dtogen.RecordGenerator;
 import io.github.manoelcampos.dtogen.util.FieldUtil;
-import io.github.manoelcampos.dtogen.util.TypeUtil;
 
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -37,36 +36,26 @@ public final class ClassInstantiation extends ObjectInstantiation {
      * @param sourceField model field to generate the value to be passed to the class/record constructor
      */
     protected String generateFieldValueInternal(final VariableElement sourceField) {
-        final var builder = new StringBuilder();
         final var sourceFieldName = FieldUtil.getFieldName(sourceField);
         final var upCaseSourceFieldName = FieldUtil.getUpCaseFieldName(sourceFieldName);
         final boolean sourceFieldAnnotatedWithMapToId = AnnotationData.contains(sourceField, DTO.MapToId.class);
 
         final var fieldValue = fieldValue(sourceField, sourceFieldAnnotatedWithMapToId);
-        final var isEnclosingElementRecord = TypeUtil.isRecord(sourceField.getEnclosingElement());
 
-        final String modelSetIdCall;
         final boolean primitive = FieldUtil.isPrimitive(sourceField);
         if(fieldValue.isBlank()){
             return "";
         }
 
         if(sourceFieldAnnotatedWithMapToId && !primitive) {
-            modelSetIdCall = "";
             final String newObjectCall = newObject(sourceField, fieldValue);
 
             // Instantiates an object of the type of the model field so that the id can be set
-            final var modelSetterCall = "          model.set%s(%s);%n".formatted(upCaseSourceFieldName, newObjectCall);
-            builder.append(isEnclosingElementRecord ? "%n%s".formatted(newObjectCall) : modelSetterCall);
-        }
-        else modelSetIdCall = "model.set%s".formatted(upCaseSourceFieldName);
-
-        if(!modelSetIdCall.isBlank()) {
-            final String value = "        %s(this.%s);".formatted(modelSetIdCall, fieldValue);
-            builder.append(isEnclosingElementRecord ? fieldValue : value);
+            return "          model.set%s(%s);%n".formatted(upCaseSourceFieldName, newObjectCall);
         }
 
-        return builder.toString();
+        final var modelSetIdCall = "model.set%s".formatted(upCaseSourceFieldName);
+        return "        %s(this.%s);".formatted(modelSetIdCall, fieldValue);
     }
 
     /**

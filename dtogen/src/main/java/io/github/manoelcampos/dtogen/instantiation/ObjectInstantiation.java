@@ -95,7 +95,9 @@ public abstract sealed class ObjectInstantiation permits ClassInstantiation, Rec
      *
      * @param sourceField           the field to generate the value to be passed to the record constructor or setter call
      * @param sourceFieldHasMapToId indicates if the field has the {@link DTO.MapToId} annotation.
-     * @return the value to be passed to the setter method (as Java code)
+     * @return the value to be passed to the setter method (as Java code);
+     * or an empty string when both (i) the element containing the field is a class and (ii) the field is excluded from the DTO record
+     * being generated, indicating no setter call must be performed.
      */
     protected final String fieldValue(final VariableElement sourceField, final boolean sourceFieldHasMapToId) {
         if(FieldUtil.isFieldExcluded(sourceField))
