@@ -1,9 +1,9 @@
 package io.github.manoelcampos.dtogen;
 
+import io.github.manoelcampos.dtogen.instantiation.ObjectInstantiation;
 import io.github.manoelcampos.dtogen.util.FieldUtil;
 import io.github.manoelcampos.dtogen.util.TypeUtil;
 
-import javax.annotation.Nullable;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -14,7 +14,6 @@ import java.util.stream.Stream;
 
 import static io.github.manoelcampos.dtogen.AnnotationData.getFieldAnnotationsStr;
 import static io.github.manoelcampos.dtogen.AnnotationData.hasAnnotation;
-import static io.github.manoelcampos.dtogen.util.FieldUtil.isNotIdField;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.*;
 
@@ -160,24 +159,7 @@ public final class RecordGenerator {
      * {@return a string with a default value for a given stream of fields, according to each field type}
      */
     public String generateFieldListInitialization() {
-        return generateFieldListInitialization(fieldStream(), null);
-    }
-
-    /**
-     * {@return a string with a default value for a given stream of fields, according to each field type}
-     * @param fieldStream  stream of field to generate their initialization value
-     * @param idFieldValue a value for the id field (null if the default value must be used, according to the field type)
-     */
-    String generateFieldListInitialization(final Stream<VariableElement> fieldStream, @Nullable final Object idFieldValue) {
-        return fieldStream
-                .map(field -> generateFieldInitialization(field, idFieldValue))
-                .collect(joining(", "));
-    }
-
-    private String generateFieldInitialization(final VariableElement field, final Object idFieldValue) {
-        // If no value is given for the id field, the field initialization list is used to instantiate a DTO object with all default values.
-        final boolean dtoInstantiation = idFieldValue == null;
-        return isNotIdField(field) || idFieldValue == null ? generateFieldInitialization(field, dtoInstantiation) : idFieldValue.toString();
+        return ObjectInstantiation.generateFieldListInitialization(typeUtil, fieldStream(), null);
     }
 
     /**
@@ -188,7 +170,7 @@ public final class RecordGenerator {
         return fieldStream(sourceClassFieldPredicate);
     }
 
-    Stream<VariableElement> allFieldsStream() {
+    public Stream<VariableElement> allFieldsStream() {
         return fieldStream(field -> true);
     }
 
@@ -222,7 +204,7 @@ public final class RecordGenerator {
     {
         final var sourceFieldAnnotationsStr = getFieldAnnotationsStr(sourceFieldAnnotationData);
         final var mapToIdAnnotation = DTO.MapToId.class;
-        final var fieldClassType = processor.typeUtil().getClassTypeElement(sourceField);
+        final var fieldClassType = processor.typeUtil().getFieldTypeElement(sourceField);
         final boolean primitive = fieldClassType == null;
         final boolean containsMapToId = AnnotationData.contains(sourceField, mapToIdAnnotation);
 
@@ -275,7 +257,7 @@ public final class RecordGenerator {
                 .stream()
                 .filter(field -> !FieldUtil.isPrimitive(field))
                 .filter(field -> !typeUtil.getTypeName(field).startsWith("java.lang."))
-                .filter(field -> !isFieldClassPkgSameAsRecordPkg(typeUtil.getTypeName(field)))
+                .filter(field -> !isFieldTypePkgSameAsRecordPkg(typeUtil.getTypeName(field)))
                 .map(field -> typeUtil.getTypeName(field, true, false))
                 .collect(toSet());
 
@@ -300,8 +282,18 @@ public final class RecordGenerator {
      * {@return true if the package of a field type is the same as the package of the model class}
      * @param fullyQualifiedFieldClassName the fully qualified name of the field type class
      */
-    public boolean isFieldClassPkgSameAsRecordPkg(final String fullyQualifiedFieldClassName) {
-        return modelPackageName.equals(TypeUtil.getPackageName(fullyQualifiedFieldClassName));
+    private boolean isFieldTypePkgSameAsRecordPkg(final String fullyQualifiedFieldClassName) {
+        return isFieldTypePkgEqualsTo(fullyQualifiedFieldClassName, modelPackageName);
+    }
+
+    /**
+     * {@return true if the package of a field type is equal to a given package}
+     *
+     * @param fullyQualifiedFieldTypeName the fully qualified name of the field type
+     * @param packageName                 the name of the package to check if the field type belongs to
+     */
+    public static boolean isFieldTypePkgEqualsTo(final String fullyQualifiedFieldTypeName, final String packageName) {
+        return packageName.equals(TypeUtil.getPackageName(fullyQualifiedFieldTypeName));
     }
 
     boolean isBooleanType(final VariableElement fieldElement) {
@@ -319,7 +311,7 @@ public final class RecordGenerator {
      * @return the first generic type (ModelClass from a declaration such as {@code List<ModelClass>})
      * (the generic type argument) if ModelClass is annotated with {@link DTO}; an empty string otherwise.
      */
-    private String getFirstGenericTypeArgAnnotatedWithDTO(final VariableElement fieldElement) {
+    public String getFirstGenericTypeArgAnnotatedWithDTO(final VariableElement fieldElement) {
         final var typeMirror = fieldElement.asType();
         if (!(typeMirror instanceof DeclaredType declaredType)) {
             return "";
@@ -328,7 +320,7 @@ public final class RecordGenerator {
         if (declaredType.getTypeArguments().isEmpty())
             return "";
 
-        final var firstTypeArg = typeUtil.getTypeMirrorAsElement(declaredType.getTypeArguments().getFirst());
+        final var firstTypeArg = typeUtil.getTypeMirrorAsTypeElement(declaredType.getTypeArguments().getFirst());
         return hasAnnotation(firstTypeArg, DTO.class) ? firstTypeArg.getSimpleName().toString() : "";
     }
 
@@ -350,6 +342,10 @@ public final class RecordGenerator {
                              }
                          
                          """;
+
+        allFieldsStream()
+                .filter(field -> AnnotationData.contains(field, DTO.MapToId.class) && !FieldUtil.isPrimitive(field))
+                .forEach(field -> addElementToImport(typeUtil.getTypeName(field, true, false)));
 
         final var methodInternalCode = ObjectInstantiation.newInstance(this, modelTypeElement).generate();
         return template.formatted(modelTypeName, methodInternalCode);
@@ -387,7 +383,7 @@ public final class RecordGenerator {
         final var fieldDeclaredType = TypeUtil.getAsDeclaredType(sourceField.asType());
         if (sourceFieldHasMapToId && fieldDeclaredType != null) {
             // Default value for a numeric field (according to its type)
-            final String defaultNumVal = generateFieldInitialization(sourceField, true);
+            final String defaultNumVal = ObjectInstantiation.generateFieldInitialization(typeUtil, sourceField, true);
             final String idFieldValue =
                     typeUtil.findIdField(sourceField)
                             .map(idField -> "          %1$s == null ? %2$s : %1$s.%3$s".formatted(modelGetterName, defaultNumVal, getterName(idField)))
@@ -424,44 +420,6 @@ public final class RecordGenerator {
     }
 
     /**
-     * {@return value to be given to a field of a model/entity class which will be instantiated}
-     * @param sourceField model field to generate the value to be passed to the class/record constructor
-     */
-    String generateValueForModelField(final VariableElement sourceField) {
-        final var builder = new StringBuilder();
-        final var sourceFieldName = FieldUtil.getFieldName(sourceField);
-        final var upCaseSourceFieldName = FieldUtil.getUpCaseFieldName(sourceFieldName);
-        final boolean sourceFieldAnnotatedWithMapToId = AnnotationData.contains(sourceField, DTO.MapToId.class);
-
-        final var setterValue = setterValue(sourceField, sourceFieldAnnotatedWithMapToId);
-        final var isRecord = TypeUtil.isRecord(sourceField.getEnclosingElement());
-
-        final String modelSetId;
-        final boolean primitive = FieldUtil.isPrimitive(sourceField);
-        if(setterValue.isBlank()){
-            return "";
-        }
-
-        if(sourceFieldAnnotatedWithMapToId && !primitive) {
-            modelSetId = "";
-            final String fieldValue = newObject(sourceField, setterValue);
-            addElementToImport(typeUtil.getTypeName(sourceField, true, false));
-
-            // Instantiates an object of the type of the model field so that the id can be set
-            final var modelSetterCall = "          model.set%s(%s);%n".formatted(upCaseSourceFieldName, fieldValue);
-            builder.append(isRecord ? "%n%s".formatted(fieldValue) : modelSetterCall);
-        }
-        else modelSetId = "model.set%s".formatted(upCaseSourceFieldName);
-
-        if(!modelSetId.isBlank()) {
-            final String value = "        %s(this.%s);".formatted(modelSetId, setterValue);
-            builder.append(isRecord ? setterValue : value);
-        }
-
-        return builder.toString();
-    }
-
-    /**
      * Adds an elemento to the {@link #additionalImports} list
      * and returns the simple name of that element.
      * @param elementQualifiedName full qualified name (including package) of the element to add to the imports list
@@ -470,28 +428,6 @@ public final class RecordGenerator {
         final String elementPackage = TypeUtil.getPackageName(elementQualifiedName);
         if(!elementPackage.equals(modelPackageName) && !elementPackage.isBlank() && !elementQualifiedName.startsWith("java.lang"))
             additionalImports.add(elementQualifiedName);
-    }
-
-    /**
-     * Generates the Java code representing the value to be passed to a setter method inside the {@link #generateToModelMethod()}.
-     *
-     * @param sourceField           the field to generate the value to be passed to the setter method
-     * @param sourceFieldHasMapToId indicates if the field has the {@link DTO.MapToId} annotation.
-     * @return the value to be passed to the setter method (as Java code)
-     */
-    private String setterValue(final VariableElement sourceField, final boolean sourceFieldHasMapToId) {
-        if(FieldUtil.isFieldExcluded(sourceField))
-            return TypeUtil.isRecord(sourceField.getEnclosingElement()) ? generateFieldInitialization(sourceField, false) : "";
-
-        final var sourceFieldName = FieldUtil.getFieldName(sourceField);
-        final var genericTypeArg = getFirstGenericTypeArgAnnotatedWithDTO(sourceField);
-        final boolean notPrimitive = !FieldUtil.isPrimitive(sourceField);
-        if (genericTypeArg.isBlank()) {
-            return "%s%s".formatted(sourceFieldName, sourceFieldHasMapToId && notPrimitive ? "Id" : "");
-        }
-
-        // Generates a stream chain to map a DTO object to a Model
-        return "%s.stream().map(%s::toModel).toList()".formatted(sourceFieldName, genericTypeArg + DTO.class.getSimpleName());
     }
 
     /**

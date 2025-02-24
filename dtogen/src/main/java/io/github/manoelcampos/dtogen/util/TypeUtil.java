@@ -3,6 +3,7 @@ package io.github.manoelcampos.dtogen.util;
 import io.github.manoelcampos.dtogen.AnnotationData;
 import io.github.manoelcampos.dtogen.DTO;
 import io.github.manoelcampos.dtogen.DTOProcessor;
+import io.github.manoelcampos.dtogen.RecordGenerator;
 
 import javax.annotation.Nullable;
 import javax.lang.model.element.Element;
@@ -30,14 +31,23 @@ public final class TypeUtil {
     }
 
     /**
+     * Checks if a given type is a primitive type.
+     * @param type the type to check
+     * @return true if it's primitive, false otherwise
+     */
+    public static boolean isPrimitive(final TypeMirror type) {
+        return type.getKind().isPrimitive();
+    }
+
+    /**
      * {@return a TypeElement that represents a field type, or null if the field is primitive}
      * @param fieldElement the element representing the field.
      */
-    public @Nullable TypeElement getClassTypeElement(final VariableElement fieldElement) {
-        return getTypeMirrorAsElement(fieldElement.asType());
+    public @Nullable TypeElement getFieldTypeElement(final VariableElement fieldElement) {
+        return getTypeMirrorAsTypeElement(fieldElement.asType());
     }
 
-    public TypeElement getTypeMirrorAsElement(final TypeMirror typeMirror) {
+    public TypeElement getTypeMirrorAsTypeElement(final TypeMirror typeMirror) {
         return (TypeElement) processor.types().asElement(typeMirror);
     }
 
@@ -60,19 +70,14 @@ public final class TypeUtil {
      */
     public String getTypeName(final VariableElement fieldElement, final boolean qualified, final boolean includeTypeArgs) {
         final var typeMirror = fieldElement.asType();
-        if (FieldUtil.isPrimitive(typeMirror)) {
-            return typeMirror.getKind().toString().toLowerCase();
-        }
-
         final var declaredType = getAsDeclaredType(typeMirror);
-        if (declaredType == null) {
-            return typeMirror.toString();
-        }
+        if (declaredType == null) // is primitive
+            return typeMirror.toString().toLowerCase();
 
-        final var element = (TypeElement) declaredType.asElement();
+        final var typeElement = (TypeElement) declaredType.asElement();
         // Check if the type has generic parameters
-        final String typeArguments = includeTypeArgs ? genericTypeArguments(declaredType) : "";
-        final var name = qualified ? element.getQualifiedName() : element.getSimpleName();
+        final String typeArguments = includeTypeArgs ? genericTypeArguments(fieldElement, declaredType) : "";
+        final var name = qualified ? typeElement.getQualifiedName() : typeElement.getSimpleName();
         return name + typeArguments;
     }
 
@@ -80,11 +85,19 @@ public final class TypeUtil {
      * Gets the generic type arguments of a given type.
      * If the type is {@code List<Customer>}, List is the declared type and Customer is the generic argument.
      *
-     * @param declaredType the type to get its generic arguments
-     * @return a String representing all the generic type arguments in format {@code <Type1, TypeN>};
-     *         or an empty string if there are no generic type arguments.
+     * @param fieldElement a field to get the generic arguments from some of its types
+     * @param declaredType a type from the field declaration to get its generic arguments.
+     *                     The type can be from any part of the field declaration.
+     *                     Considering the field type as {@code Map<String, List<Double>>},
+     *                     the method can get the generic types from {@code Map}
+     *                     or from the inner type {@code List<Double>}.
+     * @return a String representing all the generic type arguments from the declaredType in format {@code <Type1, TypeN>};
+     *         or an empty string if there are no generic type arguments or the field type is primitive.
      */
-    private String genericTypeArguments(final DeclaredType declaredType) {
+    private String genericTypeArguments(final VariableElement fieldElement, final DeclaredType declaredType) {
+        if(declaredType == null) // primitive type
+            return "";
+
         final var typeArguments = declaredType.getTypeArguments();
         if (typeArguments.isEmpty()) {
             return "";
@@ -94,7 +107,7 @@ public final class TypeUtil {
         final var genericTypeArgs =
                 typeArguments
                         .stream()
-                        .map(this::getGenericTypeArgTypes)
+                        .map(typeArg -> getGenericTypeArgTypes(fieldElement, typeArg))
                         .collect(joining(", "));
 
         return "<" + genericTypeArgs + ">";
@@ -107,23 +120,25 @@ public final class TypeUtil {
      * Since Type2 has its own generic type argument as well,
      * the method returns a String Type1<Type2<Type3>, Type4>
      * instead of just Type1<Type2, Type4>.
+     * @param fieldElement the field to get some generic type args
      * @param genericTypeArg the generic type argument to get its own type arguments (if any)
      * @return a string representation of the generic type argument with its own type arguments (if any)
      */
-    private String getGenericTypeArgTypes(final TypeMirror genericTypeArg) {
+    private String getGenericTypeArgTypes(final VariableElement fieldElement, final TypeMirror genericTypeArg) {
         final var declaredGenericTypeArg = (DeclaredType) genericTypeArg;
         // Gets the generic types of the generic type arg
-        final var genericSubTypes = genericTypeArguments(declaredGenericTypeArg);
-        return "%s%s".formatted(genericTypeArgument(genericTypeArg), genericSubTypes);
+        final var genericSubTypes = genericTypeArguments(fieldElement, declaredGenericTypeArg);
+        return "%s%s".formatted(genericTypeArgument(fieldElement, genericTypeArg), genericSubTypes);
     }
 
     /**
-     * @see #genericTypeArguments(DeclaredType)
+     * @see #genericTypeArguments(VariableElement, DeclaredType)
      */
-    private String genericTypeArgument(final TypeMirror genericType) {
-        final var genericTypeElement = getTypeMirrorAsElement(genericType);
+    private String genericTypeArgument(final VariableElement fieldElement, final TypeMirror genericType) {
+        final var fieldPackageName = getPackageName(fieldElement.getEnclosingElement());
+        final var genericTypeElement = getTypeMirrorAsTypeElement(genericType);
         final var qName = genericTypeElement.getQualifiedName().toString();
-        final var finalName = gen.isFieldClassPkgSameAsRecordPkg(qName) ? getSimpleClassName(qName) : qName;
+        final var finalName = RecordGenerator.isFieldTypePkgEqualsTo(qName, fieldPackageName) ? getSimpleClassName(qName) : qName;
         return  finalName + (AnnotationData.hasAnnotation(genericTypeElement, DTO.class) ? DTO.class.getSimpleName() : "");
     }
 
@@ -133,7 +148,7 @@ public final class TypeUtil {
      * @return an {@link Optional} containing "id" field if it exists; or an empty optional otherwise.
      */
     public Optional<VariableElement> findIdField(final VariableElement fieldEnclosingType) {
-        return findIdField(getClassTypeElement(fieldEnclosingType));
+        return findIdField(getFieldTypeElement(fieldEnclosingType));
     }
 
     /**
@@ -161,6 +176,15 @@ public final class TypeUtil {
         final int i = fullyQualifiedClassName.lastIndexOf('.');
         return i == -1 ? "" : fullyQualifiedClassName.substring(0, i);
     }
+
+    /**
+     * {@return the package name from the type of a given element (variable/field)}
+     * @param element the element to get the package name from its type
+     */
+    private String getPackageName(final Element element) {
+        return getPackageName(getTypeMirrorAsTypeElement(element.asType()).getQualifiedName().toString());
+    }
+
 
     /**
      * {@return the simple name of a class, without the package name}
@@ -229,7 +253,7 @@ public final class TypeUtil {
      * Gets a {@link TypeMirror} as a {@link DeclaredType} if that {@link TypeMirror}
      * is in fact a {@link DeclaredType} (a non-primitive type).
      * @param typeMirror the type to check and get as a {@link DeclaredType}
-     * @return a {@link DeclaredType} if the given type is a {@link DeclaredType}; null otherwise.
+     * @return a {@link DeclaredType} if the given type is a {@link DeclaredType}; null if it's a primitive type.
      */
     @Nullable
     public static DeclaredType getAsDeclaredType(final TypeMirror typeMirror) {

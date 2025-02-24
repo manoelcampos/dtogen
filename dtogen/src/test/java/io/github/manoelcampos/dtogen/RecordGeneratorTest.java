@@ -158,8 +158,7 @@ public class RecordGeneratorTest {
     @Test
     void testGetTypeName() {
         final var clazz = SampleClass.class;
-        final var gen = newInstance(clazz);
-        final var instance = new TypeUtil(gen);
+        final var instance = new TypeUtil(processor);
         final VariableElement strAttribute = fieldField(clazz, "str");
         final VariableElement genericListAttribute = fieldField(clazz, "genericList");
         final VariableElement nonGenericListAttribute = fieldField(clazz, "nonGenericList");

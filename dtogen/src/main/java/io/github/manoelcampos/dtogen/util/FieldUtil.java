@@ -3,7 +3,6 @@ package io.github.manoelcampos.dtogen.util;
 import io.github.manoelcampos.dtogen.DTO;
 
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.TypeMirror;
 
 import static io.github.manoelcampos.dtogen.AnnotationData.hasAnnotation;
 
@@ -41,18 +40,13 @@ public final class FieldUtil {
      * @return true if it's primitive, false otherwise
      */
     public static boolean isPrimitive(final VariableElement field) {
-        return isPrimitive(field.asType());
+        return TypeUtil.isPrimitive(field.asType());
     }
 
     /**
-     * Checks if the type of given field is a primitive type.
-     * @param fieldType the type of the field to check
-     * @return true if it's primitive, false otherwise
+     * {@return the name of a given field}
+     * @param field the field to get its name
      */
-    public static boolean isPrimitive(final TypeMirror fieldType) {
-        return fieldType.getKind().isPrimitive();
-    }
-
     public static String getFieldName(final VariableElement field) {
         return field.getSimpleName().toString();
     }

@@ -1,14 +1,18 @@
-package io.github.manoelcampos.dtogen;
+package io.github.manoelcampos.dtogen.instantiation;
 
+import io.github.manoelcampos.dtogen.RecordGenerator;
+
+import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import java.util.stream.Stream;
 
 /**
  * Generates the code to instantiate a class.
  * @author Manoel Campos
+ * @see ClassInstantiation#newInstance(RecordGenerator, TypeElement)
  */
 public final class ClassInstantiation extends ObjectInstantiation {
-    public ClassInstantiation(final RecordGenerator recordGen) {
+    ClassInstantiation(final RecordGenerator recordGen) {
         super(recordGen, "%n");
     }
 
