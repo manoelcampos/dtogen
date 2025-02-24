@@ -62,32 +62,41 @@ public class JavaDocExtractor {
 
             // Step 4: Analyze the Compilation Unit (AST)
             for (final CompilationUnitTree unitTree : task.parse()) {
-                for (final var tree : unitTree.getTypeDecls()) {
-                    if (tree instanceof ClassTree classTree) {
-                        final var classPath = TreePath.getPath(unitTree, classTree);
-                        // Extract Javadoc for fields and methods
-                        for (final Tree member : classTree.getMembers()) {
-                            if (member instanceof VariableTree) {
-                                final var optional = extractJavaDoc(docTrees, TreePath.getPath(unitTree, member));
-                                optional.ifPresent(javadoc -> fieldCommentsMap.put(((VariableTree) member).getName(), javadoc));
-                            }
-                        }
-                    }
-                }
+                parseTypeDeclarationTree(unitTree, docTrees);
             }
         } catch (final Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    public Stream<Entry<Name, String>> getFieldCommentsStream() {
-        return fieldCommentsMap.entrySet().stream();
+    private void parseTypeDeclarationTree(final CompilationUnitTree unitTree, final DocTrees docTrees) {
+        for (final var tree : unitTree.getTypeDecls()) {
+            parseClassTree(unitTree, docTrees, tree);
+        }
+    }
+
+    private void parseClassTree(final CompilationUnitTree unitTree, final DocTrees docTrees, final Tree tree) {
+        if (tree instanceof ClassTree classTree) {
+            for (final Tree member : classTree.getMembers()) {
+                parseField(unitTree, docTrees, member);
+            }
+        }
+    }
+
+    private void parseField(final CompilationUnitTree unitTree, final DocTrees docTrees, final Tree member) {
+        if (member instanceof VariableTree) {
+            final var optional = extractJavaDoc(docTrees, TreePath.getPath(unitTree, member));
+            optional.ifPresent(javadoc -> fieldCommentsMap.put(((VariableTree) member).getName(), javadoc));
+        }
     }
 
     private Optional<String> extractJavaDoc(final DocTrees docTrees, final TreePath path) {
         final var docCommentTree = docTrees.getDocCommentTree(path);
         return docCommentTree == null || docCommentTree.toString().isBlank() ? Optional.empty() : Optional.of(docCommentTree.toString());
+    }
 
+    public Stream<Entry<Name, String>> getFieldCommentsStream() {
+        return fieldCommentsMap.entrySet().stream();
     }
 
     private static String getMemberName(final Tree member) {
