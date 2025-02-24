@@ -5,11 +5,17 @@ import com.sun.source.util.DocTrees;
 import com.sun.source.util.JavacTask;
 import com.sun.source.util.TreePath;
 
+import javax.lang.model.element.Name;
+import javax.lang.model.element.TypeElement;
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * A class to extract the JavaDoc comments from a Java source file.
@@ -17,15 +23,30 @@ import java.util.Map;
  */
 public class JavaDocExtractor {
     /**
-     * A map with the JavaDoc comments for each field into a given java file.
+     * A map where the key is the name of a field and the value the JavaDoc comment for that field.
      */
-    private final Map<VariableTree, String> fieldCommentsMap = new HashMap<>();
+    private final Map<Name, String> fieldCommentsMap = new HashMap<>();
+
+    /**
+     * Creates an instance and extracts JavaDoc comments from the given Java element.
+     * @param typeElement a type element representing a Java class, record, interface, etc
+     */
+    public JavaDocExtractor(final TypeElement typeElement) {
+        final var javaFilePath = getJavaFilePathFromQualifiedName(typeElement);
+        System.out.println(javaFilePath);
+        extract(javaFilePath);
+    }
+
+    private static String getJavaFilePathFromQualifiedName(final TypeElement typeElement) {
+        final String path = typeElement.getQualifiedName().toString().replace(".", "/");
+        return "src/main/java/%s.java".formatted(path);
+    }
 
     /**
      * Extracts the JavaDoc comments from a Java source file.
-     * @param javaFilePath the path to the Java source file
      */
-    public void extract(final String javaFilePath) {
+    private void extract(final String javaFilePath) {
+        Objects.requireNonNull(javaFilePath);
         try {
             // Step 1: Get Java Compiler
             final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
@@ -44,12 +65,11 @@ public class JavaDocExtractor {
                 for (final var tree : unitTree.getTypeDecls()) {
                     if (tree instanceof ClassTree classTree) {
                         final var classPath = TreePath.getPath(unitTree, classTree);
-                        extractJavaDoc(docTrees, classPath, classTree);
-
                         // Extract Javadoc for fields and methods
                         for (final Tree member : classTree.getMembers()) {
-                            if (member instanceof MethodTree || member instanceof VariableTree) {
-                                extractJavaDoc(docTrees, TreePath.getPath(unitTree, member), member);
+                            if (member instanceof VariableTree) {
+                                final var optional = extractJavaDoc(docTrees, TreePath.getPath(unitTree, member));
+                                optional.ifPresent(javadoc -> fieldCommentsMap.put(((VariableTree) member).getName(), javadoc));
                             }
                         }
                     }
@@ -60,13 +80,14 @@ public class JavaDocExtractor {
         }
     }
 
-    private static void extractJavaDoc(final DocTrees docTrees, final TreePath path, final Tree member) {
+    public Stream<Entry<Name, String>> getFieldCommentsStream() {
+        return fieldCommentsMap.entrySet().stream();
+    }
+
+    private Optional<String> extractJavaDoc(final DocTrees docTrees, final TreePath path) {
         final var docCommentTree = docTrees.getDocCommentTree(path);
-        if (docCommentTree != null) {
-            System.out.printf("Javadoc for %s %s%n", member.getKind(), getMemberName(member));
-            System.out.println(docCommentTree);
-            System.out.println("---------------------------------------------------");
-        }
+        return docCommentTree == null || docCommentTree.toString().isBlank() ? Optional.empty() : Optional.of(docCommentTree.toString());
+
     }
 
     private static String getMemberName(final Tree member) {
@@ -76,9 +97,5 @@ public class JavaDocExtractor {
             case CLASS -> ((ClassTree) member).getSimpleName().toString();
             default -> "";
         };
-    }
-
-    public static void main(String[] args) {
-       new JavaDocExtractor().extract("src/main/java/io/github/manoelcampos/dtogen/JavaDocExtractor.java");
     }
 }

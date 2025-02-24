@@ -121,8 +121,9 @@ public final class RecordGenerator {
             """
             /**
              * A {@link DTORecord Data Transfer Object} for {@link %s}.
+            %s
              */
-            """.formatted(modelTypeName)
+            """.formatted(modelTypeName, fieldsJavaDoc())
         );
         recordBodyContent.append(getGeneratedAnnotation());
         recordBodyContent.append("public record %s (%s) %s {%n".formatted(recordName, fieldsStr, implementsClause));
@@ -141,6 +142,18 @@ public final class RecordGenerator {
 
         // Replaces %n codes by the OS-dependent char
         return String.format(recordFullContent.toString());
+    }
+
+    /**
+     * {@return the JavaDoc from model fields to be copied to the generated DTO record}
+     */
+    private String fieldsJavaDoc() {
+        final var extractor = new JavaDocExtractor(modelTypeElement);
+        final String javadocs =
+                extractor.getFieldCommentsStream()
+                         .map(e -> " * @param %s %s".formatted(e.getKey(), e.getValue().replaceAll("\n", " ")))
+                         .collect(joining(System.lineSeparator()));
+        return javadocs.isBlank() ? "" : " *%n%s".formatted(javadocs);
     }
 
     private String getGeneratedAnnotation() {
