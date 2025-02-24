@@ -9,6 +9,8 @@ import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
@@ -64,8 +66,8 @@ public class JavaDocExtractor {
             for (final CompilationUnitTree unitTree : task.parse()) {
                 parseTypeDeclarationTree(unitTree, docTrees);
             }
-        } catch (final Exception e) {
-            throw new RuntimeException(e);
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
@@ -99,7 +101,7 @@ public class JavaDocExtractor {
         return fieldCommentsMap.entrySet().stream();
     }
 
-    private static String getMemberName(final Tree member) {
+    public static String getMemberName(final Tree member) {
         return switch (member.getKind()) {
             case METHOD -> ((MethodTree) member).getName().toString();
             case VARIABLE -> ((VariableTree) member).getName().toString();
