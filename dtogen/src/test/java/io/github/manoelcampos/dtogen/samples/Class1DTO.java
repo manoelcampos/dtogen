@@ -9,6 +9,10 @@ import javax.annotation.processing.Generated;
 ///
 /// Comments starting with /// are striped out from the code when this file is read during test execution.
 /// These comments won't be present inside the generated DTO record that is expected to be equal to this one.
+
+/**
+ * A {@link DTORecord Data Transfer Object} for {@link Class1}.
+ */
 @Generated(value = "io.github.manoelcampos.dtogen.DTOProcessor", comments = "DTO generated using DTOGen Annotation Processor")
 public record Class1DTO (long id,  Class2 class2) implements DTORecord<Class1> {
     @Override

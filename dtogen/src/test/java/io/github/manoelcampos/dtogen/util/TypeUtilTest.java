@@ -1,35 +1,20 @@
 package io.github.manoelcampos.dtogen.util;
 
-import com.karuslabs.elementary.junit.Tools;
-import com.karuslabs.elementary.junit.ToolsExtension;
+import io.github.manoelcampos.dtogen.AbstractProcessorTest;
 import io.github.manoelcampos.dtogen.DTOProcessor;
 import io.github.manoelcampos.dtogen.samples.Class1;
+import io.github.manoelcampos.dtogen.samples.SampleClass;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.util.Elements;
-import javax.lang.model.util.Types;
 import java.util.List;
 
 import static io.github.manoelcampos.dtogen.TestUtil.findField;
 import static io.github.manoelcampos.dtogen.util.TypeUtil.*;
-import static java.util.stream.Collectors.toMap;
 import static org.junit.jupiter.api.Assertions.*;
 
-@ExtendWith(ToolsExtension.class)
-class TypeUtilTest {
-    private final Elements elements = Tools.elements();
-    private final Types types = Tools.types();
-
-    @Test
-    void testGetUpCaseFieldName() {
-        assertEquals("Name", FieldUtil.getUpCaseFieldName("name"));
-        assertEquals("Name", FieldUtil.getUpCaseFieldName("Name"));
-        assertEquals("NAME", FieldUtil.getUpCaseFieldName("nAME"));
-        assertEquals("NamE", FieldUtil.getUpCaseFieldName("namE"));
-    }
+class TypeUtilTest extends AbstractProcessorTest {
 
     @Test
     void testGetPackageName() {
@@ -51,39 +36,18 @@ class TypeUtilTest {
 
     @Test
     void testHasSuperClass() {
-        assertFalse(hasSuperClass(getClassTypeMirror(TypeUtil.class)));
-        assertTrue(hasSuperClass(getClassTypeMirror(DTOProcessor.class)));
-        assertTrue(hasSuperClass(getClassTypeMirror(Integer.class)));
-    }
-
-    @Test
-    void testIsInstanceField() {
-        final var classType = getClassTypeMirror(Class1.class);
-        final var fieldsMap = classType.getEnclosedElements().stream()
-                .filter(e -> e.getKind().isField())
-                .collect(toMap(e -> e.getSimpleName().toString(), e -> (VariableElement) e));
-
-        assertFalse(FieldUtil.isInstanceField(fieldsMap.get("MAX")));
-        assertTrue(FieldUtil.isInstanceField(fieldsMap.get("id")));
-        assertTrue(FieldUtil.isInstanceField(fieldsMap.get("class2")));
+        assertFalse(hasSuperClass(getClassTypeElement(TypeUtil.class)));
+        assertTrue(hasSuperClass(getClassTypeElement(DTOProcessor.class)));
+        assertTrue(hasSuperClass(getClassTypeElement(Integer.class)));
     }
 
     @Test
     void testGetClassFields() {
-        final var fieldNames = getClassFields(types, getClassTypeMirror(Class1.class))
+        final var fieldNames = getClassFields(types, getClassTypeElement(Class1.class))
                 .map(e -> e.getSimpleName().toString())
                 .toList();
 
         assertEquals(List.of("id", "class2"), fieldNames);
-    }
-
-    @Test
-    void testIsPrimitive() {
-        final var idField = findField(elements, Class1.class, "id");
-        final var class2Field = findField(elements, Class1.class, "class2");
-
-        assertTrue(FieldUtil.isPrimitive(idField));
-        assertFalse(FieldUtil.isPrimitive(class2Field));
     }
 
     @Test
@@ -100,7 +64,45 @@ class TypeUtilTest {
         assertFalse(isNotThreeSlashesComment("////// Tree Slashes Comment "));
     }
 
-    private TypeElement getClassTypeMirror(final Class<?> clazz) {
-        return elements.getTypeElement(clazz.getName());
+    @Test
+    void testGetTypeNameFullQualifiedAndWithGenericArgs() {
+        final VariableElement genericListType = findField(elements, SampleClass.class, "genericList");
+        final String actualType = new TypeUtil(processor).getTypeName(genericListType);
+        assertEquals("java.util.List<java.lang.String>", actualType);
+    }
+
+    @Test
+    void testGetTypeNameFullQualifiedAndNoGenericArgs() {
+        final VariableElement genericListType = findField(elements, SampleClass.class, "genericList");
+        final String actualType = new TypeUtil(processor).getTypeName(genericListType, true, false);
+        assertEquals("java.util.List", actualType);
+    }
+
+    @Test
+    void testGetTypeNameSimpleNameAndWithGenericArgs() {
+        final VariableElement genericListType = findField(elements, SampleClass.class, "genericList");
+        final String actualType = new TypeUtil(processor).getTypeName(genericListType, false, true);
+        assertEquals("List<java.lang.String>", actualType);
+    }
+
+    @Test
+    void testGetTypeNameSimpleNameAndNoGenericArgs() {
+        final VariableElement genericListType = findField(elements, SampleClass.class, "genericList");
+        final String actualType = new TypeUtil(processor).getTypeName(genericListType, false, false);
+        assertEquals("List", actualType);
+    }
+
+    @Test
+    void testFindIdField() {
+        final var typeUtil = new TypeUtil(processor);
+
+        final TypeElement primitiveTypeElement = null; // primitive types don't have a TypeElement
+        assertTrue(typeUtil.findIdField(primitiveTypeElement).isEmpty());
+
+        final var sampleClassElement = getClassTypeElement(SampleClass.class);
+        assertTrue(typeUtil.findIdField(sampleClassElement).isEmpty());
+
+        final var class1Element = getClassTypeElement(Class1.class);
+        assertFalse(typeUtil.findIdField(class1Element).isEmpty());
     }
 }

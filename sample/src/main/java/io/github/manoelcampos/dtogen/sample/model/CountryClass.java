@@ -16,9 +16,16 @@ public class CountryClass {
     // Constants aren't included in the DTO record
     private static final long SOME_CONSTANT = 1;
 
+    /**
+     *
+     */
+    // Since the field JavaDoc is blank, it's not copied to the generated DTO.
     @NotNull
     private long id;
 
+    /**
+     * The name of the country that has same length restrictions.
+     */
     @NotNull @NotBlank @Size(min = 10, max = 200)
     private String name;
 
@@ -32,6 +39,10 @@ public class CountryClass {
     //@DTO.MapToId
     private long areaKm2;
 
+    /**
+     * The language spoken in the country.
+     * Since it's annotated with {@link DTO.MapToId}, the generated DTO class will have a field languageClassId.
+     */
     @DTO.MapToId
     private LanguageClass language;
 }

@@ -117,6 +117,13 @@ public final class RecordGenerator {
 
         final var recordBodyContent = new StringBuilder();
         final String implementsClause = "implements %s<%s>".formatted(DTORecord.class.getSimpleName(), modelTypeName);
+        recordBodyContent.append(
+            """
+            /**
+             * A {@link DTORecord Data Transfer Object} for {@link %s}.%s
+             */
+            """.formatted(modelTypeName, fieldsJavaDoc())
+        );
         recordBodyContent.append(getGeneratedAnnotation());
         recordBodyContent.append("public record %s (%s) %s {%n".formatted(recordName, fieldsStr, implementsClause));
         recordBodyContent.append(generateToModelMethod());
@@ -134,6 +141,18 @@ public final class RecordGenerator {
 
         // Replaces %n codes by the OS-dependent char
         return String.format(recordFullContent.toString());
+    }
+
+    /**
+     * {@return the JavaDoc from model fields to be copied to the generated DTO record}
+     */
+    private String fieldsJavaDoc() {
+        final var extractor = new JavaDocExtractor(modelTypeElement);
+        final String javadocs =
+                extractor.getFieldCommentsStream()
+                         .map(e -> " * @param %s %s".formatted(e.getKey(), e.getValue().replaceAll("\n", " ")))
+                         .collect(joining(System.lineSeparator()));
+        return javadocs.isBlank() ? "" : " %n * %n%s".formatted(javadocs);
     }
 
     private String getGeneratedAnnotation() {

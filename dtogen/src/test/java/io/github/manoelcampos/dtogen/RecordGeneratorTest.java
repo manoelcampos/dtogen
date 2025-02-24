@@ -1,40 +1,16 @@
 package io.github.manoelcampos.dtogen;
 
-import com.karuslabs.elementary.junit.Tools;
-import com.karuslabs.elementary.junit.ToolsExtension;
-import com.karuslabs.elementary.junit.annotations.Processors;
-import com.karuslabs.utilitary.type.TypeMirrors;
 import io.github.manoelcampos.dtogen.samples.*;
 import io.github.manoelcampos.dtogen.util.TypeUtil;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mockito;
 
-import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.Elements;
 
 import static io.github.manoelcampos.dtogen.TestUtil.assertCodeEquals;
 import static org.junit.jupiter.api.Assertions.*;
 
-@ExtendWith(ToolsExtension.class)
-@Processors({DTOProcessor.class})
-public class RecordGeneratorTest {
-    private final ProcessingEnvironment env = Mockito.mock(ProcessingEnvironment.class);
-    private DTOProcessor processor;
-    private Elements elements;
-    private TypeMirrors typeMirrors;
-
-    @BeforeEach
-    void setUp() {
-        Mockito.when(env.getTypeUtils()).thenReturn(Tools.types());
-        this.processor = new DTOProcessor(env);
-        this.typeMirrors = Tools.typeMirrors();
-        this.elements = Tools.elements();
-    }
-
+public class RecordGeneratorTest extends AbstractProcessorTest {
     private RecordGenerator newInstance(final Class<?> modelClass) {
         final var sampleClassTypeElement = typeMirrors.asTypeElement(typeMirrors.type(modelClass));
         return new RecordGenerator(processor, sampleClassTypeElement);

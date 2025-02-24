@@ -39,7 +39,7 @@ public class DTOProcessor extends AbstractProcessor {
      * Creates and initializes a DTOProcessor for testing purposes
      * @param processingEnv processing environment to initialize the processor
      */
-    DTOProcessor(final ProcessingEnvironment processingEnv) {
+    public DTOProcessor(final ProcessingEnvironment processingEnv) {
         this();
         init(processingEnv);
     }
