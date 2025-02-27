@@ -31,7 +31,10 @@ public class JavaFileWriter {
      */
     public void write(final String packageName, final String recordName, final String classContent) {
         try (final var out = newJavaFileWriter(packageName, recordName)) {
-            out.printf(classContent);
+            /* Does not use printf since that the JavaDoc string inside the Java file being saved
+            may contain % characters that will be interpreted as placeholders by the method,
+            causing exception during formatting. */
+            out.println(classContent);
         } catch (final IOException e) {
             processor.error(null, "Error creating JavaFileObject to write the DTO generated code: " + e.getMessage());
         }

@@ -23,6 +23,7 @@ import static java.util.stream.Collectors.*;
  */
 public final class RecordGenerator {
     private final DTOProcessor processor;
+    private static final String ln = System.lineSeparator();
 
     private final Set<String> excludedAnnotationNameSet = Set.of(
             DTOProcessor.class.getPackageName(),
@@ -117,13 +118,8 @@ public final class RecordGenerator {
 
         final var recordBodyContent = new StringBuilder();
         final String implementsClause = "implements %s<%s>".formatted(DTORecord.class.getSimpleName(), modelTypeName);
-        recordBodyContent.append(
-            """
-            /**
-             * A {@link DTORecord Data Transfer Object} for {@link %s}.%s
-             */
-            """.formatted(modelTypeName, fieldsJavaDoc())
-        );
+
+        recordBodyContent.append(dtoJavaDoc());
         recordBodyContent.append(getGeneratedAnnotation());
         recordBodyContent.append("public record %s (%s) %s {%n".formatted(recordName, fieldsStr, implementsClause));
         recordBodyContent.append(generateToModelMethod());
@@ -139,20 +135,29 @@ public final class RecordGenerator {
         recordFullContent.append(fieldTypeImports());
         recordFullContent.append(recordBodyContent);
 
-        // Replaces %n codes by the OS-dependent char
-        return String.format(recordFullContent.toString());
+        return recordFullContent.toString();
     }
 
     /**
-     * {@return the JavaDoc from model fields to be copied to the generated DTO record}
+     * {@return the JavaDoc to be included in the generated DTO record, copying the model entity fields JavaDoc.}
      */
-    private String fieldsJavaDoc() {
+    private String dtoJavaDoc() {
+        /* Do not include the javadoc strings as a variable for the formatted method, since that string
+        may contain % characters that will be interpreted as placeholders by the method,
+        causing exception during formatting.
+        This way, String.format or String.formatted is not used anywhere in this method
+        when JavaDoc strings are being used. */
         final var extractor = new JavaDocExtractor(modelTypeElement);
-        final String javadocs =
+        final String fieldsJavaDoc =
                 extractor.getFieldCommentsStream()
-                         .map(e -> " * @param %s %s".formatted(e.getKey(), e.getValue().replaceAll("\n", " ")))
-                         .collect(joining(System.lineSeparator()));
-        return javadocs.isBlank() ? "" : " %n * %n%s".formatted(javadocs);
+                         .map(e -> " * @param " + e.getKey() + " " +  e.getValue().replaceAll("\n", " "))
+                         .collect(joining(ln));
+
+        final var recordJavaDoc = """
+                /**
+                 * A {@link DTORecord Data Transfer Object} for {@link %s}."""
+                .formatted(modelTypeName);
+        return recordJavaDoc + (fieldsJavaDoc.isBlank() ? "" : " %n * %n".formatted() + fieldsJavaDoc) + ln + " */" + ln;
     }
 
     private String getGeneratedAnnotation() {
@@ -262,7 +267,7 @@ public final class RecordGenerator {
                 .collect(toSet());
 
         final var importStream = Stream.concat(importsSet.stream(), additionalImports.stream());
-        final String imports = importStream.map("import %s;"::formatted).collect(joining("%n")) + System.lineSeparator();
+        final String imports = importStream.map("import %s;"::formatted).collect(joining(ln)) + ln;
         return "%s%n".formatted(imports);
     }
 
@@ -279,8 +284,8 @@ public final class RecordGenerator {
                 .map(field -> typeUtil.getTypeName(field, true, false))
                 .collect(toSet());
 
-        final String imports = importsSet.stream().map("import %s;"::formatted).collect(joining("%n"));
-        return imports.isBlank() ? imports : System.lineSeparator() + imports;
+        final String imports = importsSet.stream().map("import %s;"::formatted).collect(joining(ln));
+        return imports.isBlank() ? imports : ln + imports;
     }
 
     private String formatIdField(final VariableElement sourceField, final VariableElement idField, final List<AnnotationData> sourceFieldAnnotationData) {
@@ -365,7 +370,8 @@ public final class RecordGenerator {
                 .filter(field -> AnnotationData.contains(field, DTO.MapToId.class) && !FieldUtil.isPrimitive(field))
                 .forEach(field -> addElementToImport(typeUtil.getTypeName(field, true, false)));
 
-        final var methodInternalCode = ObjectInstantiation.newInstance(this, modelTypeElement).generate();
+        // formatted replaces %n codes by the OS-dependent char
+        final var methodInternalCode = ObjectInstantiation.newInstance(this, modelTypeElement).generate().formatted();
         return template.formatted(modelTypeName, methodInternalCode);
     }
 
