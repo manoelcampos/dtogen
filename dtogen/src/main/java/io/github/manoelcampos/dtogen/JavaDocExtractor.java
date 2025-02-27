@@ -119,11 +119,11 @@ public class JavaDocExtractor {
 
     private Optional<String> extractJavaDoc(final DocTrees docTrees, final TreePath path) {
         final var docCommentTree = docTrees.getDocCommentTree(path);
-        final boolean hasJavaDoc = docCommentTree == null || docCommentTree.toString().isBlank();
+        final boolean noJavaDoc = docCommentTree == null || docCommentTree.toString().isBlank();
 
         /* Replaces all line brakes that starts the new line with a space by just a line break,
         * since the trim() only removes spaces at begin and end, not between lines. */
-        return hasJavaDoc ?
+        return noJavaDoc ?
                 Optional.empty() :
                 Optional.of(docCommentTree.toString().trim().replaceAll("\n ", "\n"));
     }
