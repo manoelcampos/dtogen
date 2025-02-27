@@ -125,7 +125,7 @@ public class JavaDocExtractor {
         * since the trim() only removes spaces at begin and end, not between lines. */
         return noJavaDoc ?
                 Optional.empty() :
-                Optional.of(docCommentTree.toString().trim().replaceAll("\n ", "\n"));
+                Optional.of(docCommentTree.toString().trim().replaceAll("\n\\s", "\n"));
     }
 
     public Stream<Entry<String, String>> getFieldCommentsStream() {
