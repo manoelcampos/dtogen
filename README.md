@@ -78,6 +78,7 @@ After that, build your project using, for instance, `mvn clean package`.
 That will generate the following `PersonDTO` record in the same package as the `Person` class:
 
 ```java
+@Generated
 public record PersonDTO ( 
     long id, 
     @NotNull @NotBlank String name, 
