@@ -87,11 +87,7 @@ public class TestUtil {
     static String loadSampleSourceFile(final String sourceFileName) {
         final var testSamplesDir = "src/test/java/io/github/manoelcampos/dtogen/samples/";
         final var fullPath = Paths.get(testSamplesDir, sourceFileName).toString();
-        /* Removes the line importing the DTORecord
-        * since in the application using DTOGen, the DTORecord and its implementations
-        * will belong to the same package, so no import is included in the generated
-        * DTOs. Therefore, tests need to match that. */
-        try (var stream = Files.lines(Paths.get(fullPath)).filter(TypeUtil::isNotThreeSlashesComment).filter(TestUtil::isNotDTORecordImport)){
+        try (var stream = Files.lines(Paths.get(fullPath)).filter(TypeUtil::isNotThreeSlashesComment)){
             return String.join(System.lineSeparator(), stream.toList());
         } catch (final IOException e) {
             throw new UncheckedIOException(e);

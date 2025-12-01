@@ -260,8 +260,7 @@ public final class TypeUtil {
         return classOrRecordElement
                 .getEnclosedElements()
                 .stream()
-                .filter(filter)
-                .filter((Element element) -> element.getSimpleName().toString().equals(elementName))
+                .filter(filter.and(element -> element.getSimpleName().toString().equals(elementName)))
                 .findFirst();
     }
 

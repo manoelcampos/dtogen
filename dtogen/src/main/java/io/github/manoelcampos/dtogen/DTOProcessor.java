@@ -48,11 +48,11 @@ public class DTOProcessor extends AbstractProcessor {
     public synchronized void init(final ProcessingEnvironment processingEnv) {
         super.init(processingEnv);
         this.types = processingEnv.getTypeUtils();
-        this.javaFileWriter = new JavaFileWriter(this);
     }
 
     @Override
     public boolean process(final Set<? extends TypeElement> annotations, final RoundEnvironment roundEnv) {
+        createDtoInterface();
         annotations.forEach(annotation -> processAnnotation(roundEnv, annotation));
         return true;
     }
@@ -68,7 +68,6 @@ public class DTOProcessor extends AbstractProcessor {
         final var annotatedElementsMap = getAnnotatedElementsMap(annotatedElements);
         //Gets only classes which are annotated with @DTO
         final var classElements = annotatedElementsMap.get(true);
-        classElements.stream().findFirst().ifPresent(this::createDtoInterface);
 
         classElements.stream().map(this::newRecordGenerator).forEach(RecordGenerator::write);
 
@@ -106,16 +105,16 @@ public class DTOProcessor extends AbstractProcessor {
      * DTOGen jar resources dir and writes it to the generated-source dir inside
      * the application using DTOGen.
      * Check the interface documentation for more details.
-     * @param sourceClass a class with the {@link DTO} annotation to get its package name,
-     *                    so that the DTO interface is created in the same package.
      */
-    private void createDtoInterface(final Element sourceClass) {
-        final var classElement = (TypeElement) sourceClass;
-        final var packageName = TypeUtil.getPackageName(classElement);
+    private void createDtoInterface() {
+        if(this.javaFileWriter != null)
+            return;
 
+        this.javaFileWriter = new JavaFileWriter(this);
+        final var pkg = DTORecord.class.getPackage().getName();
         final var dtoRecordName = DTORecord.class.getSimpleName();
-        final var dtoInterfaceCode = JavaFileReader.readFromResources(dtoRecordName + ".java", packageName);
-        javaFileWriter.write(packageName, dtoRecordName, dtoInterfaceCode);
+        final var dtoInterfaceCode = JavaFileReader.readFromResources(dtoRecordName + ".java", pkg);
+        javaFileWriter.write(pkg, dtoRecordName, dtoInterfaceCode);
     }
 
     /**
@@ -139,5 +138,4 @@ public class DTOProcessor extends AbstractProcessor {
     public TypeUtil typeUtil() {
         return typeUtil;
     }
-
 }

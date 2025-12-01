@@ -4,12 +4,14 @@ import io.github.manoelcampos.dtogen.AnnotationData;
 import io.github.manoelcampos.dtogen.DTO;
 import io.github.manoelcampos.dtogen.RecordGenerator;
 import io.github.manoelcampos.dtogen.util.AccessorMethod;
+import io.github.manoelcampos.dtogen.util.TypeUtil;
 
+import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import java.util.stream.Stream;
 
-import static io.github.manoelcampos.dtogen.util.AccessorMethod.AccessorType.SETTER;
+import static io.github.manoelcampos.dtogen.util.AccessorMethod.AccessorType;
 
 /**
  * Generates the code to instantiate a class.
@@ -27,8 +29,12 @@ public final class ClassInstantiation extends ObjectInstantiation {
     }
 
     @Override
-    protected String newObjectInternal(final String idFieldValue, final String classTypeName, final Stream<VariableElement> __) {
-        return " newObject(%s, () -> { var o = new %s(); o.setId(%s); return o; })".formatted(idFieldValue, classTypeName, idFieldValue);
+    protected String newObjectInternal(final Element fieldClass, final String idFieldValue, final Stream<VariableElement> __) {
+        // Class to be instantiated (the class of the field to assign the new object to)
+        final var classTypeName = fieldClass.getSimpleName().toString();
+        final var setter = TypeUtil.getPublicMethod(fieldClass, "setId");
+        final var fieldAssignment = (setter.isPresent() ? "setId(%s)" : "id = %s").formatted(idFieldValue);
+        return " newObject(%s, () -> { var o = new %s(); o.%s; return o; })".formatted(idFieldValue, classTypeName, fieldAssignment);
     }
 
     /**
@@ -45,7 +51,7 @@ public final class ClassInstantiation extends ObjectInstantiation {
             return "";
         }
 
-        final var accessor = new AccessorMethod(typeUtil, sourceField, SETTER);
+        final var accessor = new AccessorMethod(typeUtil, sourceField, AccessorType.SETTER);
         // Calls the setter of assign the field directly if there is no setter
         final var fieldAccess = "          model." + (accessor.existing() ? "%s(%s)" : "%s = %s") + ";";
         if(sourceFieldAnnotatedWithMapToId && !accessor.isPrimitiveField()) {

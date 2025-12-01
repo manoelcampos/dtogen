@@ -8,6 +8,7 @@ import io.github.manoelcampos.dtogen.util.FieldUtil;
 import io.github.manoelcampos.dtogen.util.TypeUtil;
 
 import javax.annotation.Nullable;
+import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import java.util.Objects;
@@ -87,6 +88,14 @@ public abstract sealed class ObjectInstantiation permits ClassInstantiation, Rec
         return newInstance(recordGen, enclosingType).generateFieldValueInternal(sourceField);
     }
 
+    /**
+     * {@return the type of the object to be instantiated, based on the type of the field this object will be assigned to}
+     * @param sourceField the field to instantiate a new object to
+     */
+    protected String getTypeName(final VariableElement sourceField) {
+        return typeUtil.getTypeName(sourceField, false, true);
+    }
+
     protected abstract String generateFieldValueInternal(final VariableElement sourceField);
 
     /**
@@ -137,7 +146,6 @@ public abstract sealed class ObjectInstantiation permits ClassInstantiation, Rec
      * @return the generated constructor call code
      */
     public final String newObject(final VariableElement sourceField, final String idFieldValue) {
-        final var fieldTypeName = typeUtil.getTypeName(sourceField, false, true);
         final var fieldTypeElement = typeUtil.getTypeElement(sourceField);
         final var isPrimitive = fieldTypeElement == null;
 
@@ -148,11 +156,19 @@ public abstract sealed class ObjectInstantiation permits ClassInstantiation, Rec
         final var fieldStream = TypeUtil.getClassFields(processor.types(), fieldTypeElement);
 
         // Since the field type may be either a class or record, we need a new ObjectInstantiation according to the field type
-        final var fieldInstantiation = newInstance(recordGen, typeUtil.getTypeElement(sourceField));
-        return fieldInstantiation.newObjectInternal(idFieldValue, fieldTypeName, fieldStream);
+        final var fieldInstantiation = newInstance(recordGen, fieldTypeElement);
+        return fieldInstantiation.newObjectInternal(fieldTypeElement, idFieldValue, fieldStream);
     }
 
-    protected abstract String newObjectInternal(String idFieldValue, String classTypeName, Stream<VariableElement> fieldStream);
+    /**
+     * Generates the code to instantiate a given object to assign to some field.
+     *
+     * @param fieldClass   the class of the field to create an instance to
+     * @param idFieldValue the value to assign to the id field of the new object
+     * @param fieldStream  list of fields from the object to be instantiated
+     * @return a string with the generated constructor call
+     */
+    protected abstract String newObjectInternal(Element fieldClass, String idFieldValue, Stream<VariableElement> fieldStream);
 
     /**
      * {@return a string with a default value for a given stream of fields, according to each field type}

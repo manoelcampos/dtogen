@@ -61,7 +61,8 @@ public final class AccessorMethod {
                     "There is no public %s %s and no public field %s to be accessed inside %s"
                             .formatted(
                                     type.name().toLowerCase(), name(),
-                                    sourceFieldName, containingClassRecord.getSimpleName());
+                                    sourceFieldName,
+                                    containingClassRecord.getSimpleName());
             throw new UnsupportedOperationException(msg);
         }
 

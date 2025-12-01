@@ -133,6 +133,7 @@ public final class RecordGenerator {
         if (!modelPackageName.isBlank())
             recordFullContent.append("package %s;%n%n".formatted(modelPackageName));
 
+        addElementToImport(DTORecord.class.getName());
         recordFullContent.append(fieldAnnotationsImports());
         recordFullContent.append(fieldTypeImports());
         recordFullContent.append(recordBodyContent);

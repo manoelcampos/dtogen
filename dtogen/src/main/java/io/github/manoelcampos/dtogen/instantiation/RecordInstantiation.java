@@ -5,6 +5,7 @@ import io.github.manoelcampos.dtogen.DTO;
 import io.github.manoelcampos.dtogen.RecordGenerator;
 import io.github.manoelcampos.dtogen.util.FieldUtil;
 
+import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import java.util.stream.Stream;
@@ -25,8 +26,8 @@ public final class RecordInstantiation extends ObjectInstantiation {
     }
 
     @Override
-    protected String newObjectInternal(final String idFieldValue, final String classTypeName, final Stream<VariableElement> fieldStream) {
-        return "new %s(%s)".formatted(classTypeName, generateFieldListInitialization(typeUtil, fieldStream, idFieldValue));
+    protected String newObjectInternal(final Element fieldClass, final String idFieldValue, final Stream<VariableElement> fieldStream) {
+        return "new %s(%s)".formatted(fieldClass.getSimpleName(), generateFieldListInitialization(typeUtil, fieldStream, idFieldValue));
     }
 
     /**
