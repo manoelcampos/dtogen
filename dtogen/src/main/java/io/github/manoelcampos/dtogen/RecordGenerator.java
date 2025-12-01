@@ -367,12 +367,16 @@ public final class RecordGenerator {
                              """;
 
         allFieldsStream()
-                .filter(field -> AnnotationData.contains(field, DTO.MapToId.class) && !FieldUtil.isPrimitive(field))
+                .filter(RecordGenerator::NonPrimitiveFieldHasMapToId)
                 .forEach(field -> addElementToImport(typeUtil.getTypeName(field, true, false)));
 
         // formatted() replaces %n codes by the OS-dependent char
         final var methodInternalCode = ObjectInstantiation.newInstance(this, modelTypeElement).generate().formatted();
         return template.formatted(modelTypeName, methodInternalCode);
+    }
+
+    private static boolean NonPrimitiveFieldHasMapToId(final VariableElement field) {
+        return AnnotationData.contains(field, DTO.MapToId.class) && !FieldUtil.isPrimitive(field);
     }
 
     private String generateFromModelMethod() {
