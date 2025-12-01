@@ -14,6 +14,7 @@ public final class AccessorMethod {
     private static final String SETTER_PREFIX = "set";
     private final AccessorType type;
     private final Optional<? extends Element> accessorOptional;
+
     /**
      * Accessor method name (the name of the getter or setter for the given field).
      */
@@ -30,7 +31,7 @@ public final class AccessorMethod {
     private final VariableElement sourceField;
     /**
      * @param sourceField the field to get information about its accessors
-     *
+     * @throws UnsupportedOperationException if there is no accessor and the field is not public
      */
     public AccessorMethod(final TypeUtil typeUtil, final VariableElement sourceField, final AccessorType type) {
         this.typeUtil = typeUtil;
@@ -46,6 +47,7 @@ public final class AccessorMethod {
         this.name = "%s%s".formatted(prefix, formatedFieldName);
 
         this.accessorOptional = TypeUtil.getPublicMethod(containingClassRecord, name);
+        checkAccess();
     }
 
     /**
@@ -53,7 +55,7 @@ public final class AccessorMethod {
      * to be accessed directly.
      * @throws UnsupportedOperationException if there is no accessor and the field is not public
      */
-    public void checkAccess() {
+    private void checkAccess() {
         if(missing() && noPublicField()) {
             final var msg =
                     "There is no public %s %s and no public field %s to be accessed inside %s"
@@ -85,6 +87,12 @@ public final class AccessorMethod {
 
 
     public String name(){ return name; }
+
+    /**
+     * @return the name of the accessor method (if existing)
+     * or the name of the given field.
+     */
+    public String methodOrField(){ return existing() ? name : sourceFieldName; }
 
     public String sourceFieldName(){ return sourceFieldName; }
 
@@ -118,5 +126,12 @@ public final class AccessorMethod {
      */
     public boolean noPublicField(){
         return !TypeUtil.isPublic(sourceField);
+    }
+
+    /**
+     * @return true if the given field is primitive, false otherwise
+     */
+    public boolean isPrimitiveField(){
+        return FieldUtil.isPrimitive(sourceField);
     }
 }

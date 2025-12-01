@@ -155,7 +155,9 @@ public final class RecordGenerator {
                          .map(e -> " * @param " + e.getKey() + " " +  e.getValue().replaceAll("\n", " "))
                          .collect(joining(ln));
 
-        final var recordJavaDoc = """
+        final var recordJavaDoc =
+                """
+                %n
                 /**
                  * A {@link DTORecord Data Transfer Object} for {@link %s}."""
                 .formatted(modelTypeName);
@@ -365,7 +367,7 @@ public final class RecordGenerator {
                              """;
 
         allFieldsStream()
-                .filter(RecordGenerator::NonPrimitiveFieldHasMapToId)
+                .filter(RecordGenerator::nonPrimitiveFieldHasMapToId)
                 .forEach(field -> addElementToImport(typeUtil.getTypeName(field, true, false)));
 
         // formatted() replaces %n codes by the OS-dependent char
@@ -373,7 +375,7 @@ public final class RecordGenerator {
         return template.formatted(modelTypeName, methodInternalCode);
     }
 
-    private static boolean NonPrimitiveFieldHasMapToId(final VariableElement field) {
+    private static boolean nonPrimitiveFieldHasMapToId(final VariableElement field) {
         return AnnotationData.contains(field, DTO.MapToId.class) && !FieldUtil.isPrimitive(field);
     }
 
@@ -438,8 +440,6 @@ public final class RecordGenerator {
      */
     private String getterName(final VariableElement sourceField) {
         final var accessor = new AccessorMethod(typeUtil, sourceField, GETTER);
-        accessor.checkAccess();
-
         final var getterCall = accessor.name() + (accessor.existing() ? "()" : "");
         return accessor.existing() ? getterCall : accessor.sourceFieldName();
     }

@@ -3,11 +3,13 @@ package io.github.manoelcampos.dtogen.instantiation;
 import io.github.manoelcampos.dtogen.AnnotationData;
 import io.github.manoelcampos.dtogen.DTO;
 import io.github.manoelcampos.dtogen.RecordGenerator;
-import io.github.manoelcampos.dtogen.util.FieldUtil;
+import io.github.manoelcampos.dtogen.util.AccessorMethod;
 
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import java.util.stream.Stream;
+
+import static io.github.manoelcampos.dtogen.util.AccessorMethod.AccessorType.SETTER;
 
 /**
  * Generates the code to instantiate a class.
@@ -36,26 +38,24 @@ public final class ClassInstantiation extends ObjectInstantiation {
      * @param sourceField model field to generate the value to be passed to the class/record constructor
      */
     protected String generateFieldValueInternal(final VariableElement sourceField) {
-        final var sourceFieldName = FieldUtil.getFieldName(sourceField);
-        final var upCaseSourceFieldName = FieldUtil.getUpCaseFieldName(sourceFieldName);
         final boolean sourceFieldAnnotatedWithMapToId = AnnotationData.contains(sourceField, DTO.MapToId.class);
-
         final var fieldValue = fieldValue(sourceField, sourceFieldAnnotatedWithMapToId);
 
-        final boolean primitive = FieldUtil.isPrimitive(sourceField);
         if(fieldValue.isBlank()){
             return "";
         }
 
-        if(sourceFieldAnnotatedWithMapToId && !primitive) {
+        final var accessor = new AccessorMethod(typeUtil, sourceField, SETTER);
+        // Calls the setter of assign the field directly if there is no setter
+        final var fieldAccess = "          model." + (accessor.existing() ? "%s(%s)" : "%s = %s") + ";";
+        if(sourceFieldAnnotatedWithMapToId && !accessor.isPrimitiveField()) {
             final String newObjectCall = newObject(sourceField, fieldValue);
 
             // Instantiates an object of the type of the model field so that the id can be set
-            return "          model.set%s(%s);%n".formatted(upCaseSourceFieldName, newObjectCall);
+            return fieldAccess.formatted(accessor.methodOrField(), newObjectCall) + "%n";
         }
 
-        final var modelSetIdCall = "model.set%s".formatted(upCaseSourceFieldName);
-        return "        %s(this.%s);".formatted(modelSetIdCall, fieldValue);
+        return fieldAccess.formatted(accessor.methodOrField(), fieldValue);
     }
 
     /**
