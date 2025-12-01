@@ -69,7 +69,7 @@ public final class RecordGenerator {
      * Each item is just the element name, not the full import statement.
      *
      * <p>Sorts the list placing javax.* imports at the beginning
-     * Uses + instead of x since + comes before x in the ASCII table.
+     * Uses + instead of x, since + comes before x in the ASCII table.
      * The change is made locally just for sorting. The imports are not changed in the end.
      * </p>
      * @see #fieldAnnotationsImports()
@@ -370,7 +370,7 @@ public final class RecordGenerator {
                 .filter(field -> AnnotationData.contains(field, DTO.MapToId.class) && !FieldUtil.isPrimitive(field))
                 .forEach(field -> addElementToImport(typeUtil.getTypeName(field, true, false)));
 
-        // formatted replaces %n codes by the OS-dependent char
+        // formatted() replaces %n codes by the OS-dependent char
         final var methodInternalCode = ObjectInstantiation.newInstance(this, modelTypeElement).generate().formatted();
         return template.formatted(modelTypeName, methodInternalCode);
     }
