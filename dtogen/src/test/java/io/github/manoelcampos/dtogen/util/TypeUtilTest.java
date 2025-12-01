@@ -15,6 +15,13 @@ import static io.github.manoelcampos.dtogen.util.TypeUtil.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class TypeUtilTest extends AbstractProcessorTest {
+    @Test
+    void isBooleanType() {
+        final var clazz = SampleClass.class;
+        final var typeUtil = new TypeUtil(this.processor);
+        assertTrue(typeUtil.isBooleanType(findField(elements, clazz, "bool")));
+        assertFalse(typeUtil.isBooleanType(findField(elements, clazz, "str")));
+    }
 
     @Test
     void testGetPackageName() {

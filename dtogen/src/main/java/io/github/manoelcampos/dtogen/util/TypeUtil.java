@@ -6,15 +6,14 @@ import io.github.manoelcampos.dtogen.DTOProcessor;
 import io.github.manoelcampos.dtogen.RecordGenerator;
 
 import javax.annotation.Nullable;
-import javax.lang.model.element.Element;
-import javax.lang.model.element.ElementKind;
-import javax.lang.model.element.TypeElement;
-import javax.lang.model.element.VariableElement;
+import javax.lang.model.element.*;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
@@ -40,7 +39,7 @@ public final class TypeUtil {
     }
 
     /**
-     * {@return a TypeElement that represents the type of an element that represents a field or reference type (class, record, interface...);
+     * {@return a TypeElement that indicates the type of an element that represents a field or reference type (class, record, interface...);
      * or null if the type of the element is primitive}
      * @param element the element representing the field or reference type.
      */
@@ -237,6 +236,35 @@ public final class TypeUtil {
         return Stream.concat(superClassFields, fieldStream);
     }
 
+    public boolean isBooleanType(final VariableElement fieldElement) {
+        return "boolean".equalsIgnoreCase(getTypeName(fieldElement));
+    }
+
+    public static Optional<? extends Element> getPublicMethod(final Element classOrRecordElement, final String methodName) {
+        final var optionalElement = getMethod(classOrRecordElement, methodName);
+        return optionalElement.filter(TypeUtil::isPublic);
+    }
+
+    public static Optional<? extends Element> getMethod(final Element classOrRecordElement, final String methodName) {
+        return getElement(classOrRecordElement, methodName, element -> element.getKind() == ElementKind.METHOD);
+    }
+
+    /**
+     * Checks if a class/record has a given element and returns it.
+     * @param classOrRecordElement the class/record to check if it contains a given element
+     * @param elementName the element to check if it's indie the class/record
+     * @return an Optional containing the element or {@link Optional#empty()} if not found
+     */
+    private static Optional<? extends Element> getElement(final Element classOrRecordElement,
+                                                          final String elementName, final Predicate<Element> filter) {
+        return classOrRecordElement
+                .getEnclosedElements()
+                .stream()
+                .filter(filter)
+                .filter((Element element) -> element.getSimpleName().toString().equals(elementName))
+                .findFirst();
+    }
+
     /**
      * {@return true if a line doesn't start with a triple slash comment ///, false otherwise}
      * @param line the line to check
@@ -263,5 +291,10 @@ public final class TypeUtil {
     @Nullable
     public static DeclaredType getAsDeclaredType(final TypeMirror typeMirror) {
         return typeMirror instanceof DeclaredType declaredType ? declaredType : null;
+    }
+
+    public static <T extends Element> boolean isPublic(final T element) {
+        final Set<Modifier> modifiers = element.getModifiers();
+        return modifiers.contains(Modifier.PUBLIC);
     }
 }

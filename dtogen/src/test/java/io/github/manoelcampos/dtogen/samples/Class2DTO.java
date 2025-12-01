@@ -18,7 +18,7 @@ public record Class2DTO (long id, int class3Id) implements DTORecord<Class2> {
     @Override
     public Class2 toModel(){
         final var model = new Class2();
-        model.setId(this.id);
+        model.setId(id);
         model.setClass3(newObject(class3Id, () -> { var o = new Class3(); o.setId(class3Id); return o; }));
 
         return model;

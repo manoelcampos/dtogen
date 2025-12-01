@@ -19,10 +19,10 @@ public record SampleClassDTO (String str,  boolean bool,  List<String> genericLi
     @Override
     public SampleClass toModel(){
         final var model = new SampleClass();
-        model.setStr(this.str);
-        model.setBool(this.bool);
-        model.setGenericList(this.genericList);
-        model.setNonGenericList(this.nonGenericList);
+        model.setStr(str);
+        model.setBool(bool);
+        model.setGenericList(genericList);
+        model.setNonGenericList(nonGenericList);
 
         return model;
     }

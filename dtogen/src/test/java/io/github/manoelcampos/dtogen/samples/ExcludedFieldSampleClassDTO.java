@@ -18,7 +18,7 @@ public record ExcludedFieldSampleClassDTO (boolean included) implements DTORecor
     @Override
     public ExcludedFieldSampleClass toModel(){
         final var model = new ExcludedFieldSampleClass();
-        model.setIncluded(this.included);
+        model.setIncluded(included);
 
         return model;
     }
