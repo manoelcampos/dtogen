@@ -17,7 +17,8 @@ import io.github.manoelcampos.dtogen.sample.model.*;
 public class Main {
     public static void main(String[] args) {
         final var language = new LanguageClass(1, "Brazilian Portuguese", "PT-BR");
-        final var country = new CountryClass(1, "Brazil", "South America", 8_510_417_771L, language);
+        final var continent = new ContinentClass("South America");
+        final var country = new CountryClass(1, "Brazil", continent, 8_510_417_771L, language);
         final var profession = new ProfessionRecord(1, "Software Engineer", "IT");
         final var religion = new ReligionClass("Christianity", "Middle East");
         final var mother = new PersonRecord(1, "Mother", 60, 35, "Brazil", country, profession, religion);

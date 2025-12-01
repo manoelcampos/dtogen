@@ -16,9 +16,6 @@ public class CountryClass {
     // Constants aren't included in the DTO record
     private static final long SOME_CONSTANT = 1;
 
-    /**
-     *
-     */
     // Since the field JavaDoc is blank, it's not copied to the generated DTO.
     @NotNull
     private long id;
@@ -29,8 +26,8 @@ public class CountryClass {
     @NotNull @NotBlank @Size(min = 10, max = 200)
     private String name;
 
-    @NotNull @NotBlank
-    private String continent;
+    @NotNull
+    private ContinentClass continent;
 
     /**
      * Since this field has a primitive type, the {@link DTO.MapToId} is not allowed,
