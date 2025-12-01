@@ -111,14 +111,6 @@ public class RecordGeneratorTest extends AbstractProcessorTest {
     }
 
     @Test
-    void isBooleanType() {
-        final var clazz = SampleClass.class;
-        final var instance = newInstance(clazz);
-        assertTrue(instance.isBooleanType(fieldField(clazz, "bool")));
-        assertFalse(instance.isBooleanType(fieldField(clazz, "str")));
-    }
-
-    @Test
     void getAsDeclaredType() {
         // Gets a TypeMirror from a primitive (non-declared) type
         final TypeMirror primitiveTypeMirror = typeMirrors.type(long.class);
@@ -135,9 +127,9 @@ public class RecordGeneratorTest extends AbstractProcessorTest {
     void testGetTypeName() {
         final var clazz = SampleClass.class;
         final var instance = new TypeUtil(processor);
-        final VariableElement strAttribute = fieldField(clazz, "str");
-        final VariableElement genericListAttribute = fieldField(clazz, "genericList");
-        final VariableElement nonGenericListAttribute = fieldField(clazz, "nonGenericList");
+        final VariableElement strAttribute = findField(clazz, "str");
+        final VariableElement genericListAttribute = findField(clazz, "genericList");
+        final VariableElement nonGenericListAttribute = findField(clazz, "nonGenericList");
 
         assertEquals("java.lang.String", instance.getTypeName(strAttribute));
         assertEquals("java.util.List<java.lang.String>", instance.getTypeName(genericListAttribute));
@@ -151,7 +143,7 @@ public class RecordGeneratorTest extends AbstractProcessorTest {
         assertEquals("java.util.List", instance.getTypeName(nonGenericListAttribute, true, false));
     }
 
-    private VariableElement fieldField(Class<?> clazz, final String elementName) {
+    private VariableElement findField(Class<?> clazz, final String elementName) {
         return TestUtil.findField(elements, clazz, elementName);
     }
 }

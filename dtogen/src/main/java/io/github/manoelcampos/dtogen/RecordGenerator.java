@@ -1,6 +1,7 @@
 package io.github.manoelcampos.dtogen;
 
 import io.github.manoelcampos.dtogen.instantiation.ObjectInstantiation;
+import io.github.manoelcampos.dtogen.util.AccessorMethod;
 import io.github.manoelcampos.dtogen.util.FieldUtil;
 import io.github.manoelcampos.dtogen.util.TypeUtil;
 
@@ -14,6 +15,7 @@ import java.util.stream.Stream;
 
 import static io.github.manoelcampos.dtogen.AnnotationData.getFieldAnnotationsStr;
 import static io.github.manoelcampos.dtogen.AnnotationData.hasAnnotation;
+import static io.github.manoelcampos.dtogen.util.AccessorMethod.AccessorType.GETTER;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.*;
 
@@ -319,10 +321,6 @@ public final class RecordGenerator {
         return packageName.equals(TypeUtil.getPackageName(fullyQualifiedFieldTypeName));
     }
 
-    boolean isBooleanType(final VariableElement fieldElement) {
-        return "boolean".equalsIgnoreCase(typeUtil.getTypeName(fieldElement));
-    }
-
     /**
      * Checks if a field has a generic type argument annotated with {@link DTO}
      * in order to generate that field using the DTO record instead of the Model class.
@@ -434,16 +432,16 @@ public final class RecordGenerator {
 
     /**
      * {@return the name of the getter for a given field in a model/entity class}
+     * If there is no getter and the field is public, returns the field name.
      * @param sourceField field to obtain its getter name
+     * @throws UnsupportedOperationException if there is no getter and the field is not public
      */
     private String getterName(final VariableElement sourceField) {
-        final var sourceFieldName = sourceField.getSimpleName().toString();
-        final boolean isRecord = TypeUtil.isRecord(sourceField.getEnclosingElement());
-        final var formatedFieldName = isRecord ? sourceFieldName : FieldUtil.getUpCaseFieldName(sourceFieldName);
+        final var accessor = new AccessorMethod(typeUtil, sourceField, GETTER);
+        accessor.checkAccess();
 
-        final var prefixForGetterInsideClass = isBooleanType(sourceField) ? "is" : "get";
-        final var prefix = isRecord ? "" : prefixForGetterInsideClass;
-        return "%s%s()".formatted(prefix, formatedFieldName);
+        final var getterCall = accessor.name() + (accessor.existing() ? "()" : "");
+        return accessor.existing() ? getterCall : accessor.sourceFieldName();
     }
 
     /**
