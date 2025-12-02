@@ -70,6 +70,7 @@ public class Person {
 
     private Country country;
 
+    /** Current profession of the person */
     private Profession profession;
 }
 ```
@@ -78,6 +79,10 @@ After that, build your project using, for instance, `mvn clean package`.
 That will generate the following `PersonDTO` record in the same package as the `Person` class:
 
 ```java
+/**
+ * A {@link DTORecord Data Transfer Object} for {@link Person}. 
+ * @param profession Current profession of the person
+ */
 @Generated
 public record PersonDTO ( 
     long id, 

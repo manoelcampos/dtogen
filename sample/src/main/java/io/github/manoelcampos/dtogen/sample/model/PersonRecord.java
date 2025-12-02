@@ -5,6 +5,7 @@ import jakarta.validation.constraints.*;
 
 /**
  * @author Manoel Campos
+ * @param country The country where the person is currently living.
  */
 @DTO
 public record PersonRecord(

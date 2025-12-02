@@ -19,6 +19,9 @@ public class LanguageClass {
     @NotNull @NotBlank @Size(min = 10, max = 200)
     private String name;
 
+    /**
+     * The ISO 639 language code (such as EN or PT)
+     */
     @NotNull @NotBlank
     private String abbreviation;
 }
