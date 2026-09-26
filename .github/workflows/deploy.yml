@@ -15,7 +15,7 @@ jobs:
         uses: actions/setup-java@v6
         with:
           java-version-file: '.sdkmanrc'
-          server-id: manoelcampos-ossrh
+          server-id: central
           # ~/.m2/settings.xml
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD
