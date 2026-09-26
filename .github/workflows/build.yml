@@ -8,25 +8,48 @@ on:
   workflow_call:  # permite chamar este workflow a partir de outros (como no deploy)
 
 jobs:
-  build:
+  resolve-java-versions:
 
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      last: ${{ steps.set-matrix.outputs.last }}
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up JDK
-      uses: actions/setup-java@v4
+    - uses: actions/checkout@v7
+    - id: set-matrix
+      name: Read java versions from .sdkmanrc
+      run: |
+        versions=$(grep -E '^java=' .sdkmanrc | cut -d= -f2)
+        echo "matrix=$(echo "$versions" | jq -R . | jq -sc .)" >> "$GITHUB_OUTPUT"
+        echo "last=$(echo "$versions" | tail -n1)" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: resolve-java-versions
+
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: ${{ fromJson(needs.resolve-java-versions.outputs.matrix) }}
+
+    steps:
+    - uses: actions/checkout@v7
+    - name: Write java-version file for ${{ matrix.java }}
+      run: echo "java=${{ matrix.java }}" > "$RUNNER_TEMP/.sdkmanrc"
+    - name: Set up JDK ${{ matrix.java }}
+      uses: actions/setup-java@v6
       with:
-        java-version: '21'
-        distribution: 'temurin'
+        java-version-file: '${{ runner.temp }}/.sdkmanrc'
         cache: maven
     - name: Build with Maven
       run: mvn -B package --file dtogen/pom.xml
 
     - name: Codacy coverage report upload
+      if: matrix.java == needs.resolve-java-versions.outputs.last
       env:
         CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
       run: |
         mvn --file dtogen/pom.xml jacoco:report
-        test -z $CODACY_PROJECT_TOKEN || bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r dtogen/target/site/jacoco/jacoco.xml
+        test -z "$CODACY_PROJECT_TOKEN" || bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r dtogen/target/site/jacoco/jacoco.xml
 

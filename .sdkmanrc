@@ -1,0 +1,7 @@
+# Enable auto-env through the sdkman_auto_env config
+# Add key=value pairs of SDKs to use below
+# Multiple java= lines are used as a test matrix in CI (build.yml).
+# Locally, "sdk env" applies each line in order, so the LAST java= line
+# is the one that ends up active in your shell.
+java=21.0.12-amzn
+java=25.0.4-amzn
