@@ -110,6 +110,23 @@ public class RecordGeneratorTest extends AbstractProcessorTest {
         assertCodeEquals(expectedRecordCode, generatedRecordCode);
     }
 
+    /**
+     * Checks the generation of a DTO record when there is an association between model classes
+     * {@link Class6} and {@link Class5} annotated with {@link DTO.MapToId},
+     * where {@link Class5} has no setter of its own for the "id" field,
+     * since that field and its accessors are inherited from {@link Class4}.
+     * The generated code instantiating {@link Class5} must call the inherited {@code setId} method,
+     * instead of falling back to a direct (and invalid, since the field is private) access to the "id" field.
+     */
+    @Test
+    void generateMapToIdAssociationWithInheritedAccessor() {
+        final var instance = newInstance(Class6.class);
+        final String generatedRecordCode = instance.generate();
+        final String expectedRecordCode = TestUtil.loadSampleSourceFile("Class6DTO.java");
+
+        assertCodeEquals(expectedRecordCode, generatedRecordCode);
+    }
+
     @Test
     void getAsDeclaredType() {
         // Gets a TypeMirror from a primitive (non-declared) type

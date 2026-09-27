@@ -2,6 +2,7 @@ package io.github.manoelcampos.dtogen.util;
 
 import io.github.manoelcampos.dtogen.AbstractProcessorTest;
 import io.github.manoelcampos.dtogen.DTOProcessor;
+import io.github.manoelcampos.dtogen.samples.AccessorShadowChild;
 import io.github.manoelcampos.dtogen.samples.Class1;
 import io.github.manoelcampos.dtogen.samples.SampleClass;
 import org.junit.jupiter.api.Test;
@@ -97,6 +98,22 @@ class TypeUtilTest extends AbstractProcessorTest {
         final VariableElement genericListType = findField(elements, SampleClass.class, "genericList");
         final String actualType = new TypeUtil(processor).getTypeName(genericListType, false, false);
         assertEquals("List", actualType);
+    }
+
+    /**
+     * Checks that {@link TypeUtil#getPublicMethod} keeps searching up the superclass chain
+     * when a same-named but non-public method is found in a closer superclass, instead of
+     * stopping there and missing a usable public method declared further up
+     * (see {@link io.github.manoelcampos.dtogen.samples.AccessorShadowGrandParent}
+     * and {@link io.github.manoelcampos.dtogen.samples.AccessorShadowParent}).
+     */
+    @Test
+    void testGetPublicMethodSkipsNonPublicOverloadFoundInCloserSuperclass() {
+        final var childElement = getClassTypeElement(AccessorShadowChild.class);
+        final var method = getPublicMethod(childElement, "setId");
+
+        assertTrue(method.isPresent());
+        assertTrue(isPublic(method.get()));
     }
 
     @Test
