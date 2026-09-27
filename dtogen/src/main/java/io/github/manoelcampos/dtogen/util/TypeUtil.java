@@ -241,12 +241,7 @@ public final class TypeUtil {
     }
 
     public static Optional<? extends Element> getPublicMethod(final Element classOrRecordElement, final String methodName) {
-        final var optionalElement = getMethod(classOrRecordElement, methodName);
-        return optionalElement.filter(TypeUtil::isPublic);
-    }
-
-    public static Optional<? extends Element> getMethod(final Element classOrRecordElement, final String methodName) {
-        return getElement(classOrRecordElement, methodName, element -> element.getKind() == ElementKind.METHOD);
+        return getElement(classOrRecordElement, methodName, element -> element.getKind() == ElementKind.METHOD && isPublic(element));
     }
 
     /**

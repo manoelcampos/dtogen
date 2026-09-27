@@ -7,7 +7,7 @@ import javax.annotation.processing.Generated;
 /// A sample of the DTO record that the DTOGen must generate for the [Class6] model.
 /// This DTO is used in tests to check if the DTO is generated as expected and compiles correctly.
 ///
-/// Comments starting with /// are striped out from the code when this file is read during test execution.
+/// Comments starting with /// are stripped out from the code when this file is read during test execution.
 /// These comments won't be present inside the generated DTO record that is expected to be equal to this one.
 
 /**
