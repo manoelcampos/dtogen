@@ -21,7 +21,7 @@ import static java.util.stream.Collectors.partitioningBy;
  * @see <a href="https://www.baeldung.com/java-annotation-processing-builder">Java Annotation Processing with Builder</a>
  */
 @SupportedAnnotationTypes("io.github.manoelcampos.dtogen.DTO")
-@SupportedSourceVersion(SourceVersion.RELEASE_21)
+@SupportedSourceVersion(SourceVersion.RELEASE_25)
 @AutoService(Processor.class)
 public class DTOProcessor extends AbstractProcessor {
     private Types types;
