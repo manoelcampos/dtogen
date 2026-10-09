@@ -33,12 +33,11 @@ public record AnnotationData(String name, String values) {
     }
 
     /**
-     * Gets the annotations of a field, including the
+     * {@return the annotations of a field, including the
      * {@link java.lang.annotation.ElementType#TYPE_USE} annotations of the field type
-     * (such as JSpecify's {@code @Nullable}).
+     * (such as JSpecify's {@code @Nullable})}
      * @param field the field to get its annotations
      * @param annotationPredicate a Predicate to filter the annotations you want to keep for a field
-     * @return
      */
     public static List<AnnotationData> getFieldAnnotations(final VariableElement field, final Predicate<AnnotationData> annotationPredicate) {
         return Stream.concat(field.getAnnotationMirrors().stream(), getTypeAnnotationMirrors(field))
@@ -50,7 +49,7 @@ public record AnnotationData(String name, String values) {
     }
 
     /**
-     * Gets the {@link java.lang.annotation.ElementType#TYPE_USE} annotations of a field type.
+     * {@return a stream of the {@link java.lang.annotation.ElementType#TYPE_USE} annotations of a field type}
      * Such annotations belong to the field type, not to the field element,
      * so they aren't returned by {@link VariableElement#getAnnotationMirrors()}.
      *
@@ -58,7 +57,6 @@ public record AnnotationData(String name, String values) {
      * applies to the array, but it would be copied to the record component as {@code @Nullable String[]},
      * applying to the array elements instead.</p>
      * @param field the field to get the annotations of its type
-     * @return a stream of the field type annotations
      */
     private static Stream<? extends AnnotationMirror> getTypeAnnotationMirrors(final VariableElement field) {
         final var fieldType = field.asType();
