@@ -20,8 +20,13 @@ jobs:
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD
           cache: 'maven'
+      # Uses the Maven Wrapper to pin the Maven version.
+      # Maven 3.10 (default in the runner since image ubuntu24/20261004) leaves maven-metadata files
+      # at the artifact level of the central-publishing-maven-plugin staging dir.
+      # That makes Maven Central reject the bundle with "Bundle has content that does NOT have a .pom file".
       - name: Publish package
-        run: SIGN_KEY="${{ secrets.OSSRH_GPG_SIGN_KEY }}" mvn -f ./dtogen/pom.xml -DskipTests --no-transfer-progress --batch-mode -Psonatype deploy
+        working-directory: ./dtogen
+        run: SIGN_KEY="${{ secrets.OSSRH_GPG_SIGN_KEY }}" ./mvnw -DskipTests --no-transfer-progress --batch-mode -Psonatype deploy
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}

@@ -43,13 +43,15 @@ jobs:
         java-version-file: '${{ runner.temp }}/.sdkmanrc'
         cache: maven
     - name: Build with Maven
-      run: mvn -B package --file dtogen/pom.xml
+      working-directory: ./dtogen
+      run: ./mvnw -B package
 
     - name: Codacy coverage report upload
       if: matrix.java == needs.resolve-java-versions.outputs.last
       env:
         CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
+      working-directory: ./dtogen
       run: |
-        mvn --file dtogen/pom.xml jacoco:report
-        test -z "$CODACY_PROJECT_TOKEN" || bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r dtogen/target/site/jacoco/jacoco.xml
+        ./mvnw jacoco:report
+        test -z "$CODACY_PROJECT_TOKEN" || bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r target/site/jacoco/jacoco.xml
 
