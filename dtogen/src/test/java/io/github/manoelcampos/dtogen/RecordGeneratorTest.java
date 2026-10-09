@@ -127,6 +127,21 @@ public class RecordGeneratorTest extends AbstractProcessorTest {
         assertCodeEquals(expectedRecordCode, generatedRecordCode);
     }
 
+    /**
+     * Checks the generation of a DTO record for {@link Class8}, which has fields annotated with
+     * JSpecify's {@code @Nullable}, a {@link java.lang.annotation.ElementType#TYPE_USE} annotation.
+     * Such annotations must be copied to the DTO record components (including the import),
+     * even for a {@link DTO.MapToId} field, whose record component has a different type from the original field.
+     */
+    @Test
+    void generateWithTypeUseAnnotations() {
+        final var instance = newInstance(Class8.class);
+        final String generatedRecordCode = instance.generate();
+        final String expectedRecordCode = TestUtil.loadSampleSourceFile("Class8DTO.java");
+
+        assertCodeEquals(expectedRecordCode, generatedRecordCode);
+    }
+
     @Test
     void getAsDeclaredType() {
         // Gets a TypeMirror from a primitive (non-declared) type
