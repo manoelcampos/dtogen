@@ -3,10 +3,12 @@ package io.github.manoelcampos.dtogen;
 import io.github.manoelcampos.dtogen.util.TypeUtil;
 
 import javax.lang.model.element.*;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.util.ElementFilter;
 import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
 
@@ -31,18 +33,36 @@ public record AnnotationData(String name, String values) {
     }
 
     /**
-     * Gets the annotations of a field.
+     * Gets the annotations of a field, including the
+     * {@link java.lang.annotation.ElementType#TYPE_USE} annotations of the field type
+     * (such as JSpecify's {@code @Nullable}).
      * @param field the field to get its annotations
      * @param annotationPredicate a Predicate to filter the annotations you want to keep for a field
      * @return
      */
     public static List<AnnotationData> getFieldAnnotations(final VariableElement field, final Predicate<AnnotationData> annotationPredicate) {
-        return field
-                .getAnnotationMirrors()
-                .stream()
-                .map(AnnotationData::get)
-                .filter(annotationPredicate)
-                .toList();
+        return Stream.concat(field.getAnnotationMirrors().stream(), getTypeAnnotationMirrors(field))
+                     .map(AnnotationData::get)
+                     .filter(annotationPredicate)
+                     // Annotations targeting both declarations and TYPE_USE are present in the field and in its type
+                     .distinct()
+                     .toList();
+    }
+
+    /**
+     * Gets the {@link java.lang.annotation.ElementType#TYPE_USE} annotations of a field type.
+     * Such annotations belong to the field type, not to the field element,
+     * so they aren't returned by {@link VariableElement#getAnnotationMirrors()}.
+     *
+     * <p>Annotations of array types are ignored, since an annotation such as in {@code String @Nullable []}
+     * applies to the array, but it would be copied to the record component as {@code @Nullable String[]},
+     * applying to the array elements instead.</p>
+     * @param field the field to get the annotations of its type
+     * @return a stream of the field type annotations
+     */
+    private static Stream<? extends AnnotationMirror> getTypeAnnotationMirrors(final VariableElement field) {
+        final var fieldType = field.asType();
+        return fieldType.getKind() == TypeKind.ARRAY ? Stream.empty() : fieldType.getAnnotationMirrors().stream();
     }
 
 
