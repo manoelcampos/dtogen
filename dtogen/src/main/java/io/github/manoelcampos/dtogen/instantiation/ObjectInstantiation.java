@@ -205,7 +205,12 @@ public abstract sealed class ObjectInstantiation permits ClassInstantiation, Rec
         return switch (sourceFieldTypeName) {
             case "String" -> "\"\"";
             case "Long" -> "0L";
-            case "Integer", "int",  "long", "Short", "short", "Byte", "byte", "Double", "double" -> "0";
+            case "Integer", "int",  "long", "short", "byte", "double" -> "0";
+            // Boxed types require a literal (or cast) of the same type, since an int literal isn't converted to them
+            case "Double" -> "0.0";
+            case "Float", "float" -> "0.0F";
+            case "Short" -> "(short) 0";
+            case "Byte" -> "(byte) 0";
             case "Character", "char" -> "'\\0'";
             case "Boolean", "boolean" -> "false";
             default -> {

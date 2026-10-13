@@ -142,6 +142,21 @@ public class RecordGeneratorTest extends AbstractProcessorTest {
         assertCodeEquals(expectedRecordCode, generatedRecordCode);
     }
 
+    /**
+     * Checks the generation of a DTO record for {@link Class9}, which has
+     * (i) annotation attributes with characters that must be escaped in Java String/char literals (such as a backslash in a regex)
+     * and (ii) boxed and primitive numeric fields (such as {@link Double} and {@code float}) that can't receive an int literal
+     * as default value in the no-args constructor.
+     */
+    @Test
+    void generateWithEscapedAnnotationValuesAndTypedDefaultValues() {
+        final var instance = newInstance(Class9.class);
+        final String generatedRecordCode = instance.generate();
+        final String expectedRecordCode = TestUtil.loadSampleSourceFile("Class9DTO.java");
+
+        assertCodeEquals(expectedRecordCode, generatedRecordCode);
+    }
+
     @Test
     void getAsDeclaredType() {
         // Gets a TypeMirror from a primitive (non-declared) type

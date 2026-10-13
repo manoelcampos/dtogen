@@ -21,6 +21,19 @@ class AnnotationDataTest {
     }
 
     @Test
+    void formatAttrValueEscapesSpecialChars() {
+        assertEquals("\"[A-Z]{3}\\\\d{4}\"", AnnotationData.formatAttrValue("[A-Z]{3}\\d{4}"));
+        assertEquals("\"say \\\"hi\\\"\\n\\ttab\\r\"", AnnotationData.formatAttrValue("say \"hi\"\n\ttab\r"));
+        assertEquals("'\\''", AnnotationData.formatAttrValue('\''));
+        assertEquals("'\\\\'", AnnotationData.formatAttrValue('\\'));
+        assertEquals("'\"'", AnnotationData.formatAttrValue('"'));
+        assertEquals("'\\n'", AnnotationData.formatAttrValue('\n'));
+
+        // Control chars without a specific escape sequence are written as octal escapes
+        assertEquals("\"a\\000b\"", AnnotationData.formatAttrValue("a\0b"));
+    }
+
+    @Test
     void getName() {
         assertEquals("io.github.manoelcampos.dtogen.AnnotationData", AnnotationData.getName(AnnotationData.class));
         assertEquals("io.github.manoelcampos.dtogen.DTO.MapToId", AnnotationData.getName(DTO.MapToId.class));
