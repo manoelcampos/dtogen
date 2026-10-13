@@ -87,18 +87,56 @@ public record AnnotationData(String name, String values) {
     }
 
     /**
-     * Formats a value for some attribute in the annotation, adding quotes if that value is a String or char.
+     * {@return the formatted value for some attribute in the annotation}
+     * If that value is a String or char, it's written as a Java literal,
+     * adding quotes and escaping special characters (such as backslash, quotes and new lines).
      * @param value the value to format
-     * @return the formatted value
      */
     static String formatAttrValue(final Object value) {
-        if (value instanceof String)
-            return String.format("\"%s\"", value);
+        if (value instanceof String str)
+            return "\"%s\"".formatted(escapeJavaLiteral(str, '"'));
 
-        if (value instanceof Character)
-            return String.format("'%c'", value);
+        if (value instanceof Character chr)
+            return "'%s'".formatted(escapeJavaLiteral(String.valueOf(chr), '\''));
 
         return value.toString();
+    }
+
+    /**
+     * {@return a text with its special characters escaped, so that it can be used inside a Java String or char literal}
+     * @param text the text to escape
+     * @param quote the quote char that delimits the literal (double quote for a String and single quote for a char).
+     *              Only this quote char is escaped inside the text, since the other one doesn't need escaping.
+     */
+    private static String escapeJavaLiteral(final String text, final char quote) {
+        final var builder = new StringBuilder(text.length());
+        text.chars().forEach(chr -> builder.append(escapeJavaChar((char) chr, quote)));
+        return builder.toString();
+    }
+
+    /**
+     * {@return a char escaped (if needed) to be used inside a Java String or char literal}
+     * Other control chars (without a specific escape sequence) are written as a 3-digit octal escape
+     * (instead of a Unicode escape, which is translated before the code is parsed
+     * and would insert the actual char into the literal).
+     * @param chr the char to escape
+     * @param quote the quote char that delimits the literal, which must be escaped if found
+     */
+    private static String escapeJavaChar(final char chr, final char quote) {
+        return switch (chr) {
+            case '\\' -> "\\\\";
+            case '\n' -> "\\n";
+            case '\r' -> "\\r";
+            case '\t' -> "\\t";
+            case '\b' -> "\\b";
+            case '\f' -> "\\f";
+            default -> {
+                if (chr == quote)
+                    yield "\\" + chr;
+
+                yield Character.isISOControl(chr) ? "\\%03o".formatted((int) chr) : String.valueOf(chr);
+            }
+        };
     }
 
     /**
