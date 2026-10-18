@@ -157,6 +157,33 @@ public class RecordGeneratorTest extends AbstractProcessorTest {
         assertCodeEquals(expectedRecordCode, generatedRecordCode);
     }
 
+    /**
+     * Checks the generation of a DTO record for {@link Class10}, which has collection fields of different types
+     * ({@link java.util.List}, {@link java.util.Collection}, {@link java.util.Set} and {@link java.util.SortedSet})
+     * whose generic type argument is annotated with {@link DTO}.
+     * The stream collector in both {@code toModel()} and {@code fromModel()} must match each collection type.
+     */
+    @Test
+    void generateWithCollectionsOfDtoTypes() {
+        final var instance = newInstance(Class10.class);
+        final String generatedRecordCode = instance.generate();
+        final String expectedRecordCode = TestUtil.loadSampleSourceFile("Class10DTO.java");
+
+        assertCodeEquals(expectedRecordCode, generatedRecordCode);
+    }
+
+    /**
+     * Checks the generation of a DTO record for {@link Class7}, which is used as the item type of collections in {@link Class10}.
+     */
+    @Test
+    void generateFromClassUsedInCollections() {
+        final var instance = newInstance(Class7.class);
+        final String generatedRecordCode = instance.generate();
+        final String expectedRecordCode = TestUtil.loadSampleSourceFile("Class7DTO.java");
+
+        assertCodeEquals(expectedRecordCode, generatedRecordCode);
+    }
+
     @Test
     void getAsDeclaredType() {
         // Gets a TypeMirror from a primitive (non-declared) type

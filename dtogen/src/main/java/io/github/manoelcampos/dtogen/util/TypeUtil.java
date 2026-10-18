@@ -309,6 +309,22 @@ public final class TypeUtil {
         return typeMirror instanceof DeclaredType declaredType ? declaredType : null;
     }
 
+    /**
+     * {@return true if the type of a given field is the same as, or a subtype of, a given type (ignoring generic type arguments);
+     * false otherwise (including when the field type is primitive)}
+     * @param fieldElement the field to check its type
+     * @param type the type to check if the field type is assignable to
+     */
+    public boolean isSubtypeOf(final VariableElement fieldElement, final Class<?> type) {
+        final var fieldType = fieldElement.asType();
+        final var typeElement = processor.elements().getTypeElement(type.getCanonicalName());
+        if (isPrimitive(fieldType) || typeElement == null)
+            return false;
+
+        final var types = processor.types();
+        return types.isSubtype(types.erasure(fieldType), types.erasure(typeElement.asType()));
+    }
+
     public static <T extends Element> boolean isPublic(final T element) {
         final Set<Modifier> modifiers = element.getModifiers();
         return modifiers.contains(Modifier.PUBLIC);

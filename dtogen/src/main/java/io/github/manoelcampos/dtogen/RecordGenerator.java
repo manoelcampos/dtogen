@@ -2,6 +2,7 @@ package io.github.manoelcampos.dtogen;
 
 import io.github.manoelcampos.dtogen.instantiation.ObjectInstantiation;
 import io.github.manoelcampos.dtogen.util.AccessorMethod;
+import io.github.manoelcampos.dtogen.util.CollectionCollector;
 import io.github.manoelcampos.dtogen.util.FieldUtil;
 import io.github.manoelcampos.dtogen.util.TypeUtil;
 
@@ -428,9 +429,23 @@ public final class RecordGenerator {
 
         // Generates a stream chain to map a Model object to a DTO
         final var dtoRecordName = genericTypeArg + DTO.class.getSimpleName();
-        final var dtoToModelMapper = ".stream().map(item -> new %s().fromModel(item)).toList()".formatted(dtoRecordName);
+        if (genericTypeArg.isBlank())
+            return formattedGetter;
 
-        return formattedGetter + (genericTypeArg.isBlank() ? "" : dtoToModelMapper);
+        final var dtoToModelMapper = ".stream().map(item -> new %s().fromModel(item))".formatted(dtoRecordName);
+        return formattedGetter + dtoToModelMapper + collectorCode(sourceField);
+    }
+
+    /**
+     * {@return the code to collect a stream into a collection of the same type of a given collection field}
+     * The classes required by that code are added to the {@link #additionalImports}.
+     * @param collectionField the collection field to get the collector code for
+     * @see CollectionCollector
+     */
+    public String collectorCode(final VariableElement collectionField) {
+        final var collector = CollectionCollector.of(typeUtil, collectionField);
+        collector.imports().forEach(this::addElementToImport);
+        return collector.code();
     }
 
     /**
