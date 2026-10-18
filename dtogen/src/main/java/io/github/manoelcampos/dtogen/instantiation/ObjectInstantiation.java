@@ -120,7 +120,8 @@ public abstract sealed class ObjectInstantiation permits ClassInstantiation, Rec
         }
 
         // Generates a stream chain to map a DTO object to a Model
-        return "%s.stream().map(%s::toModel).toList()".formatted(sourceFieldName, genericTypeArg + DTO.class.getSimpleName());
+        final var dtoToModelMapper = "%s.stream().map(%s::toModel)".formatted(sourceFieldName, genericTypeArg + DTO.class.getSimpleName());
+        return dtoToModelMapper + recordGen.collectorCode(sourceField);
     }
 
     /**

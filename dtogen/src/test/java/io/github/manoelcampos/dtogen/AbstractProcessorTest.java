@@ -19,6 +19,7 @@ public abstract class AbstractProcessorTest extends AbstractToolsExtensionTest {
     @BeforeEach
     void setUp() {
         Mockito.when(env.getTypeUtils()).thenReturn(Tools.types());
+        Mockito.when(env.getElementUtils()).thenReturn(Tools.elements());
         this.processor = new DTOProcessor(env);
     }
 }

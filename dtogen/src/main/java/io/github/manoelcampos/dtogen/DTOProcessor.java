@@ -7,6 +7,7 @@ import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 import java.util.List;
@@ -25,6 +26,7 @@ import static java.util.stream.Collectors.partitioningBy;
 @AutoService(Processor.class)
 public class DTOProcessor extends AbstractProcessor {
     private Types types;
+    private Elements elements;
     private final TypeUtil typeUtil;
 
     private JavaFileWriter javaFileWriter;
@@ -48,6 +50,7 @@ public class DTOProcessor extends AbstractProcessor {
     public synchronized void init(final ProcessingEnvironment processingEnv) {
         super.init(processingEnv);
         this.types = processingEnv.getTypeUtils();
+        this.elements = processingEnv.getElementUtils();
     }
 
     @Override
@@ -133,6 +136,10 @@ public class DTOProcessor extends AbstractProcessor {
 
     public Types types() {
         return types;
+    }
+
+    public Elements elements() {
+        return elements;
     }
 
     public TypeUtil typeUtil() {
