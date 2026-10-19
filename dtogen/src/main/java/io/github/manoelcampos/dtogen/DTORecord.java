@@ -30,6 +30,7 @@ public interface DTORecord<T> {
      * It sets some attributes inside a supplier function.
      * @param supplier the supplier function to create the object and set some attributes
      */
+    @SuppressWarnings("NullAway") // This file is copied to the application, which may not have JSpecify to annotate the return as @Nullable
     default <O> O newObject(final Object id, final Supplier<O> supplier){
         return hasId(id) ? supplier.get() : null;
     }

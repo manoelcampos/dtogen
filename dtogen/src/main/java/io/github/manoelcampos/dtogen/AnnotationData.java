@@ -4,7 +4,6 @@ import io.github.manoelcampos.dtogen.util.TypeUtil;
 
 import javax.lang.model.element.*;
 import javax.lang.model.type.TypeKind;
-import javax.lang.model.util.ElementFilter;
 import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.function.Predicate;
@@ -66,10 +65,11 @@ public record AnnotationData(String name, String values) {
 
     private static AnnotationData get(final AnnotationMirror mirror) {
         final var annotationType = mirror.getAnnotationType().toString();
-        final var annotationValues = ElementFilter.methodsIn(mirror.getElementValues().keySet())
-                                                  .stream()
-                                                  .map(element -> attributeToStr(element, mirror))
-                                                  .collect(joining(", "));
+        final var annotationValues = mirror.getElementValues()
+                                           .entrySet()
+                                           .stream()
+                                           .map(entry -> attributeToStr(entry.getKey(), entry.getValue()))
+                                           .collect(joining(", "));
 
         return new AnnotationData(annotationType, annotationValues);
     }
@@ -78,12 +78,11 @@ public record AnnotationData(String name, String values) {
      * Gets a String representation of a given annotation attribute.
      *
      * @param annotationAttributeElement annotation attribute to get a String representation
-     * @param mirror the annotation mirror that enables getting annotation metadata
+     * @param attributeValue the value of the annotation attribute
      * @return
      */
-    private static String attributeToStr(final ExecutableElement annotationAttributeElement, final AnnotationMirror mirror) {
-        final Object value = mirror.getElementValues().get(annotationAttributeElement).getValue();
-        return annotationAttributeElement.getSimpleName() + "=" + formatAttrValue(value);
+    private static String attributeToStr(final ExecutableElement annotationAttributeElement, final AnnotationValue attributeValue) {
+        return annotationAttributeElement.getSimpleName() + "=" + formatAttrValue(attributeValue.getValue());
     }
 
     /**

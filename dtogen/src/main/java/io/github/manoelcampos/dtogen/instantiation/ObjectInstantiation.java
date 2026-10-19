@@ -7,7 +7,7 @@ import io.github.manoelcampos.dtogen.RecordGenerator;
 import io.github.manoelcampos.dtogen.util.FieldUtil;
 import io.github.manoelcampos.dtogen.util.TypeUtil;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -83,7 +83,7 @@ public abstract sealed class ObjectInstantiation permits ClassInstantiation, Rec
      */
     private String generateFieldValue(final VariableElement sourceField) {
         // Type of the class/record containing the field to generate a value
-        final var enclosingType = typeUtil.getTypeElement(sourceField.getEnclosingElement());
+        final var enclosingType = typeUtil.getTypeMirrorAsTypeElement(TypeUtil.getEnclosingElement(sourceField).asType());
 
         return newInstance(recordGen, enclosingType).generateFieldValueInternal(sourceField);
     }
@@ -148,10 +148,9 @@ public abstract sealed class ObjectInstantiation permits ClassInstantiation, Rec
      */
     public final String newObject(final VariableElement sourceField, final String idFieldValue) {
         final var fieldTypeElement = typeUtil.getTypeElement(sourceField);
-        final var isPrimitive = fieldTypeElement == null;
 
         // If the field is primitive, return the default value for that type (since there is no instantiation for such types).
-        if(isPrimitive)
+        if(fieldTypeElement == null)
             return generateFieldInitialization(typeUtil, sourceField, false);
 
         final var fieldStream = TypeUtil.getClassFields(processor.types(), fieldTypeElement);
@@ -187,7 +186,7 @@ public abstract sealed class ObjectInstantiation permits ClassInstantiation, Rec
      * @param sourceField  the field to generate the initialization value for
      * @param idFieldValue a value for the id field (null if the default value must be used, according to the field type)
      */
-    public static String generateFieldInitialization(final TypeUtil typeUtil, final VariableElement sourceField, final Object idFieldValue) {
+    public static String generateFieldInitialization(final TypeUtil typeUtil, final VariableElement sourceField, @Nullable final Object idFieldValue) {
         // If no value is given for the id field, the field initialization list is used to instantiate a DTO object with all default values.
         final boolean dtoInstantiation = idFieldValue == null;
         return isNotIdField(sourceField) || idFieldValue == null ? generateFieldInitialization(typeUtil, sourceField, dtoInstantiation) : idFieldValue.toString();

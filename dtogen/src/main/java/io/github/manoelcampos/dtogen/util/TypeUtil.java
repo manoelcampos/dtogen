@@ -5,12 +5,13 @@ import io.github.manoelcampos.dtogen.DTO;
 import io.github.manoelcampos.dtogen.DTOProcessor;
 import io.github.manoelcampos.dtogen.RecordGenerator;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import javax.lang.model.element.*;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -135,7 +136,7 @@ public final class TypeUtil {
      * @see #genericTypeArguments(VariableElement, DeclaredType)
      */
     private String genericTypeArgument(final VariableElement fieldElement, final TypeMirror genericType) {
-        final var fieldPackageName = getPackageName(fieldElement.getEnclosingElement());
+        final var fieldPackageName = getPackageName(getEnclosingElement(fieldElement));
         final var genericTypeElement = getTypeMirrorAsTypeElement(genericType);
         final var qName = genericTypeElement.getQualifiedName().toString();
         final var finalName = RecordGenerator.isFieldTypePkgEqualsTo(qName, fieldPackageName) ? getSimpleClassName(qName) : qName;
@@ -287,6 +288,15 @@ public final class TypeUtil {
      */
     public static boolean isNotThreeSlashesComment(final String line) {
         return !line.trim().startsWith("///");
+    }
+
+    /**
+     * {@return the element that encloses a given one (such as the class/record that declares a field)}
+     * @param element the element to get its enclosing element
+     * @throws NullPointerException if the element has no enclosing element (such as a module)
+     */
+    public static Element getEnclosingElement(final Element element) {
+        return Objects.requireNonNull(element.getEnclosingElement(), () -> element + " has no enclosing element");
     }
 
     /**
