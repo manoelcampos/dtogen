@@ -38,7 +38,7 @@ public final class AccessorMethod {
         this.sourceField = sourceField;
         this.type = type;
         this.sourceFieldName = sourceField.getSimpleName().toString();
-        this.containingClassRecord = sourceField.getEnclosingElement();
+        this.containingClassRecord = TypeUtil.getEnclosingElement(sourceField);
         final boolean isRecord = TypeUtil.isRecord(containingClassRecord);
         final var formatedFieldName = isRecord ? sourceFieldName : FieldUtil.getUpCaseFieldName(sourceFieldName);
 

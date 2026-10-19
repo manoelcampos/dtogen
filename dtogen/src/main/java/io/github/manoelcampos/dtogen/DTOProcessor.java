@@ -3,6 +3,8 @@ package io.github.manoelcampos.dtogen;
 import com.google.auto.service.AutoService;
 import io.github.manoelcampos.dtogen.util.TypeUtil;
 
+import org.jspecify.annotations.Nullable;
+
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
@@ -29,7 +31,7 @@ public class DTOProcessor extends AbstractProcessor {
     private Elements elements;
     private final TypeUtil typeUtil;
 
-    private JavaFileWriter javaFileWriter;
+    private @Nullable JavaFileWriter javaFileWriter;
 
     /** Default constructor called during the application compilation process,
      * to further execute the processor. */
@@ -70,12 +72,12 @@ public class DTOProcessor extends AbstractProcessor {
 
         final var annotatedElementsMap = getAnnotatedElementsMap(annotatedElements);
         //Gets only classes which are annotated with @DTO
-        final var classElements = annotatedElementsMap.get(true);
+        final var classElements = annotatedElementsMap.getOrDefault(true, List.of());
 
         classElements.stream().map(this::newRecordGenerator).forEach(RecordGenerator::write);
 
         //Gets only non-classes which are annotated with @DTO
-        showInvalidAnnotationLocation(annotation, annotatedElementsMap.get(false));
+        showInvalidAnnotationLocation(annotation, annotatedElementsMap.getOrDefault(false, List.of()));
     }
 
     /**
@@ -99,7 +101,7 @@ public class DTOProcessor extends AbstractProcessor {
         return annotatedElements.stream().collect(partitioningBy(el -> el.getKind().isClass()));
     }
 
-    void error(final Element element, final String msg){
+    void error(final @Nullable Element element, final String msg){
         processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, msg, element);
     }
 

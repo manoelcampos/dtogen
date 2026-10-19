@@ -242,7 +242,7 @@ public final class RecordGenerator {
             processor.error(sourceField, msg.formatted(sourceField.getSimpleName()));
         }
 
-        if (!containsMapToId || primitive) {
+        if (!containsMapToId || fieldClassType == null) {
             return String.format("%s %s %s", sourceFieldAnnotationsStr, getFieldType(sourceField), sourceField.getSimpleName());
         }
 
