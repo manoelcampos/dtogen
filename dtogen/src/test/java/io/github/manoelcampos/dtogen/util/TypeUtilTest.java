@@ -40,6 +40,7 @@ class TypeUtilTest extends AbstractProcessorTest {
     void testGetSimpleClassName() {
         assertEquals("ClassUtil", getSimpleClassName("io.github.manoelcampos.dtogen.util.ClassUtil"));
         assertEquals("DTOProcessor", getSimpleClassName("DTOProcessor"));
+        assertEquals("Map<String, List<LocalDate>>", getSimpleClassName("java.util.Map<java.lang.String, java.util.List<java.time.LocalDate>>"));
     }
 
     @Test

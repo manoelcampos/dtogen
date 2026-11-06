@@ -288,6 +288,7 @@ public final class RecordGenerator {
                 .filter(field -> !typeUtil.getTypeName(field).startsWith("java.lang."))
                 .filter(field -> !isFieldTypePkgSameAsRecordPkg(typeUtil.getTypeName(field)))
                 .map(field -> typeUtil.getTypeName(field, true, false))
+                .filter(Predicate.not(additionalImports::contains))
                 .collect(toSet());
 
         final String imports = importsSet.stream().map("import %s;"::formatted).collect(joining(ln));
@@ -299,12 +300,14 @@ public final class RecordGenerator {
     }
 
     /**
-     * {@return the type of a field without the java.lang package prefix (if existing)}
+     * {@return the type of a field using simple names only}
+     * The generic type arguments of the type are added to the {@link #additionalImports}, since their simple names are used.
      * @param fieldElement field element to get its type
      */
     private String getFieldType(final VariableElement fieldElement) {
-        final String typeName = typeUtil.getTypeName(fieldElement).replaceAll("java\\.lang\\.", "");
-        return TypeUtil.getSimpleClassName(typeName);
+        final String typeName = TypeUtil.getSimpleClassName(typeUtil.getTypeName(fieldElement));
+        typeUtil.genericTypeArgQualifiedNames(fieldElement.asType()).forEach(this::addElementToImport);
+        return typeName;
     }
 
     /**
@@ -467,7 +470,7 @@ public final class RecordGenerator {
      */
     private void addElementToImport(final String elementQualifiedName) {
         final String elementPackage = TypeUtil.getPackageName(elementQualifiedName);
-        if(!elementPackage.equals(modelPackageName) && !elementPackage.isBlank() && !elementQualifiedName.startsWith("java.lang"))
+        if(!elementPackage.equals(modelPackageName) && !elementPackage.isBlank() && !"java.lang".equals(elementPackage))
             additionalImports.add(elementQualifiedName);
     }
 
