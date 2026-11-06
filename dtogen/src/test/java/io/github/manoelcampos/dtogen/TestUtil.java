@@ -93,8 +93,4 @@ public class TestUtil {
             throw new UncheckedIOException(e);
         }
     }
-
-    private static boolean isNotDTORecordImport(final String line) {
-        return !line.equals("import io.github.manoelcampos.dtogen.DTORecord;");
-    }
 }

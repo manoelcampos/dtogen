@@ -19,10 +19,9 @@ import static java.util.stream.Collectors.joining;
  */
 public record AnnotationData(String name, String values) {
     /**
-     * Gets the string representation of the annotations of a field.
+     * {@return the string representation of the annotations of a field}
      *
-     * @param sourceFieldAnnotations
-     * @return
+     * @param sourceFieldAnnotations the annotations of the field
      */
     public static String getFieldAnnotationsStr(final List<AnnotationData> sourceFieldAnnotations) {
         return sourceFieldAnnotations
@@ -75,11 +74,10 @@ public record AnnotationData(String name, String values) {
     }
 
     /**
-     * Gets a String representation of a given annotation attribute.
+     * {@return a String representation of a given annotation attribute}
      *
      * @param annotationAttributeElement annotation attribute to get a String representation
      * @param attributeValue the value of the annotation attribute
-     * @return
      */
     private static String attributeToStr(final ExecutableElement annotationAttributeElement, final AnnotationValue attributeValue) {
         return annotationAttributeElement.getSimpleName() + "=" + formatAttrValue(attributeValue.getValue());
@@ -139,12 +137,11 @@ public record AnnotationData(String name, String values) {
     }
 
     /**
-     * Checks if an annotation mirror represents a given annotation class,
-     * that is, if a given annotation is the one we are looking for.
+     * {@return true if an annotation mirror represents a given annotation class,
+     * that is, if a given annotation is the one we are looking for; false otherwise}
      *
      * @param annotationClass the class of the annotation we are looking for
      * @param mirror          the annotation mirror that enables getting annotation metadata
-     * @return
      */
     public static boolean isEqualTo(final Class<?> annotationClass, final AnnotationMirror mirror) {
         return mirror.getAnnotationType().toString().endsWith(getName(annotationClass));
@@ -161,10 +158,9 @@ public record AnnotationData(String name, String values) {
     }
 
     /**
-     * Checks if a class field has a given annotation.
+     * {@return true if a class field has a given annotation, false otherwise}
      * @param sourceField the field to look for an annotation
      * @param annotationClass the annotation we are looking for in the field
-     * @return
      */
     public static boolean contains(final VariableElement sourceField, final Class<? extends Annotation> annotationClass) {
         return sourceField.getAnnotationMirrors().stream().anyMatch(mirror -> isEqualTo(annotationClass, mirror));

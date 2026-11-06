@@ -41,8 +41,8 @@ public interface DTORecord<T> {
             return false;
         }
 
-        if(id instanceof Number){
-            return ((Number) id).doubleValue() > 0;
+        if(id instanceof Number number){
+            return number.doubleValue() > 0;
         }
 
         return !id.toString().isBlank();

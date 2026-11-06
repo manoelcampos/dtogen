@@ -27,6 +27,7 @@ import static java.util.stream.Collectors.*;
 public final class RecordGenerator {
     private final DTOProcessor processor;
     private static final String ln = System.lineSeparator();
+    private static final String JAVA_LANG_PACKAGE = "java.lang";
 
     private final Set<String> excludedAnnotationNameSet = Set.of(
             DTOProcessor.class.getPackageName(),
@@ -238,8 +239,7 @@ public final class RecordGenerator {
         final boolean containsMapToId = AnnotationData.contains(sourceField, mapToIdAnnotation);
 
         if(containsMapToId && primitive){
-            final var msg = "The @MapToId annotation in %s is not allowed for primitive fields.";
-            processor.error(sourceField, msg.formatted(sourceField.getSimpleName()));
+            processor.error(sourceField, "The @MapToId annotation in %s is not allowed for primitive fields.".formatted(sourceField.getSimpleName()));
         }
 
         if (!containsMapToId || fieldClassType == null) {
@@ -285,9 +285,9 @@ public final class RecordGenerator {
                 .keySet()
                 .stream()
                 .filter(field -> !FieldUtil.isPrimitive(field))
-                .filter(field -> !typeUtil.getTypeName(field).startsWith("java.lang."))
-                .filter(field -> !isFieldTypePkgSameAsRecordPkg(typeUtil.getTypeName(field)))
                 .map(field -> typeUtil.getTypeName(field, true, false))
+                .filter(typeName -> !isFieldTypePkgEqualsTo(typeName, JAVA_LANG_PACKAGE))
+                .filter(typeName -> !isFieldTypePkgSameAsRecordPkg(typeName))
                 .filter(Predicate.not(additionalImports::contains))
                 .collect(toSet());
 
@@ -363,21 +363,19 @@ public final class RecordGenerator {
     }
 
     private String generateToModelMethod() {
-        final var template = """
-                                 @Override
-                                 public %s toModel(){
-                                 %s
-                                 }
-                             
-                             """;
-
         allFieldsStream()
                 .filter(RecordGenerator::nonPrimitiveFieldHasMapToId)
                 .forEach(field -> addElementToImport(typeUtil.getTypeName(field, true, false)));
 
         // formatted() replaces %n codes by the OS-dependent char
         final var methodInternalCode = ObjectInstantiation.newInstance(this, modelTypeElement).generate().formatted();
-        return template.formatted(modelTypeName, methodInternalCode);
+        return """
+                                 @Override
+                                 public %s toModel(){
+                                 %s
+                                 }
+                             
+                             """.formatted(modelTypeName, methodInternalCode);
     }
 
     private static boolean nonPrimitiveFieldHasMapToId(final VariableElement field) {
@@ -385,8 +383,8 @@ public final class RecordGenerator {
     }
 
     private String generateFromModelMethod() {
-        final var methodCode =
-             """
+        final var constructorValues = fieldStream().map(this::dtoConstructorParam).collect(joining(",%n".formatted()));
+        return """
                  @Override
                  public %1$s fromModel(final %2$s model){
                      final var dto = new %1$s(
@@ -396,10 +394,7 @@ public final class RecordGenerator {
                      return dto;
                  }
              
-             """;
-
-        final var constructorValues = fieldStream().map(this::dtoConstructorParam).collect(joining(",%n".formatted()));
-        return methodCode.formatted(recordName, modelTypeName, constructorValues);
+             """.formatted(recordName, modelTypeName, constructorValues);
     }
 
     /**
@@ -470,7 +465,7 @@ public final class RecordGenerator {
      */
     private void addElementToImport(final String elementQualifiedName) {
         final String elementPackage = TypeUtil.getPackageName(elementQualifiedName);
-        if(!elementPackage.equals(modelPackageName) && !elementPackage.isBlank() && !"java.lang".equals(elementPackage))
+        if(!elementPackage.equals(modelPackageName) && !elementPackage.isBlank() && !JAVA_LANG_PACKAGE.equals(elementPackage))
             additionalImports.add(elementQualifiedName);
     }
 

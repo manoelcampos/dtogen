@@ -2,6 +2,7 @@ package io.github.manoelcampos.dtogen.util;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.VariableElement;
+import java.util.Locale;
 import java.util.Optional;
 
 import static io.github.manoelcampos.dtogen.util.AccessorMethod.AccessorType.GETTER;
@@ -60,7 +61,7 @@ public final class AccessorMethod {
             final var msg =
                     "There is no public %s %s and no public field %s to be accessed inside %s"
                             .formatted(
-                                    type.name().toLowerCase(), name(),
+                                    type.name().toLowerCase(Locale.ROOT), name(),
                                     sourceFieldName,
                                     containingClassRecord.getSimpleName());
             throw new UnsupportedOperationException(msg);
@@ -73,14 +74,14 @@ public final class AccessorMethod {
     }
 
     /**
-     * @return true if an accessor for the given field was NOT found, false otherwise
+     * {@return true if an accessor for the given field was NOT found, false otherwise}
      */
     public boolean missing(){
         return accessorOptional.isEmpty();
     }
 
     /**
-     * @return true if an accessor for the given field was found, false otherwise
+     * {@return true if an accessor for the given field was found, false otherwise}
      */
     public boolean existing(){
         return accessorOptional.isPresent();
@@ -90,8 +91,8 @@ public final class AccessorMethod {
     public String name(){ return name; }
 
     /**
-     * @return the name of the accessor method (if existing)
-     * or the name of the given field.
+     * {@return the name of the accessor method (if existing)
+     * or the name of the given field}
      */
     public String methodOrField(){ return existing() ? name : sourceFieldName; }
 
@@ -121,16 +122,16 @@ public final class AccessorMethod {
     }
 
     /**
-     * @return true if no public field was found for the accessor
+     * {@return true if no public field was found for the accessor
      *         (there may be a field, but with other visibility),
-     *         false otherwise.
+     *         false otherwise}
      */
     public boolean noPublicField(){
         return !TypeUtil.isPublic(sourceField);
     }
 
     /**
-     * @return true if the given field is primitive, false otherwise
+     * {@return true if the given field is primitive, false otherwise}
      */
     public boolean isPrimitiveField(){
         return FieldUtil.isPrimitive(sourceField);

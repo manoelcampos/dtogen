@@ -1,5 +1,7 @@
 package io.github.manoelcampos.dtogen.util;
 
+import org.jspecify.annotations.Nullable;
+
 import javax.lang.model.element.VariableElement;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -29,18 +31,18 @@ public enum CollectionCollector {
 
     private final Class<?> collectionType;
     private final String code;
-    private final List<String> imports;
+    private final @Nullable Class<?> collectionImplementation;
 
     CollectionCollector(final Class<?> collectionType, final String code, final Class<?> collectionImplementation) {
         this.collectionType = collectionType;
         this.code = code;
-        this.imports = Stream.of(Collectors.class, collectionImplementation).map(Class::getName).toList();
+        this.collectionImplementation = collectionImplementation;
     }
 
     CollectionCollector(final Class<?> collectionType, final String code) {
         this.collectionType = collectionType;
         this.code = code;
-        this.imports = List.of();
+        this.collectionImplementation = null;
     }
 
     /**
@@ -67,6 +69,8 @@ public enum CollectionCollector {
      * {@return the fully qualified name of the classes to be imported to use the {@link #code()}}
      */
     public List<String> imports() {
-        return imports;
+        return collectionImplementation == null ?
+                List.of() :
+                Stream.of(Collectors.class, collectionImplementation).map(Class::getName).toList();
     }
 }

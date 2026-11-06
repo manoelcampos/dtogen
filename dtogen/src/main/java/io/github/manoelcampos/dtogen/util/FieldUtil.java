@@ -3,6 +3,7 @@ package io.github.manoelcampos.dtogen.util;
 import io.github.manoelcampos.dtogen.DTO;
 
 import javax.lang.model.element.VariableElement;
+import java.util.Locale;
 
 import static io.github.manoelcampos.dtogen.AnnotationData.hasAnnotation;
 
@@ -22,7 +23,7 @@ public final class FieldUtil {
      * @param fieldName the name of a field
      */
     public static String getUpCaseFieldName(final String fieldName) {
-        return fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
+        return fieldName.substring(0, 1).toUpperCase(Locale.ROOT) + fieldName.substring(1);
     }
 
     /**
