@@ -15,6 +15,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
@@ -24,6 +25,11 @@ import static java.util.stream.Collectors.joining;
  * @author Manoel Campos
  */
 public final class TypeUtil {
+    /**
+     * Matches the qualifier of a type name, even inside generic type arguments.
+     */
+    private static final Pattern TYPE_QUALIFIER = Pattern.compile("(\\p{javaJavaIdentifierPart}+\\.)+");
+
     private final DTOProcessor processor;
 
     public TypeUtil(final DTOProcessor processor) {
@@ -137,10 +143,35 @@ public final class TypeUtil {
      */
     private String genericTypeArgument(final VariableElement fieldElement, final TypeMirror genericType) {
         final var fieldPackageName = getPackageName(getEnclosingElement(fieldElement));
+        final var qName = genericTypeArgQualifiedName(genericType);
+        return RecordGenerator.isFieldTypePkgEqualsTo(qName, fieldPackageName) ? getSimpleClassName(qName) : qName;
+    }
+
+    /**
+     * {@return the qualified name of a generic type argument, which is the name of its DTO record if the type is annotated with {@link DTO}}
+     * @param genericType the generic type argument to get its name
+     */
+    private String genericTypeArgQualifiedName(final TypeMirror genericType) {
         final var genericTypeElement = getTypeMirrorAsTypeElement(genericType);
-        final var qName = genericTypeElement.getQualifiedName().toString();
-        final var finalName = RecordGenerator.isFieldTypePkgEqualsTo(qName, fieldPackageName) ? getSimpleClassName(qName) : qName;
-        return  finalName + (AnnotationData.hasAnnotation(genericTypeElement, DTO.class) ? DTO.class.getSimpleName() : "");
+        final var dtoSuffix = AnnotationData.hasAnnotation(genericTypeElement, DTO.class) ? DTO.class.getSimpleName() : "";
+        return genericTypeElement.getQualifiedName() + dtoSuffix;
+    }
+
+    /**
+     * {@return the qualified names of all generic type arguments of a type (including the nested ones)}
+     * Considering {@code Map<String, List<Customer>>}, it returns String, List and CustomerDTO
+     * (if Customer is annotated with {@link DTO}).
+     * @param type the type to get its generic type arguments
+     */
+    public Stream<String> genericTypeArgQualifiedNames(final TypeMirror type) {
+        final var declaredType = getAsDeclaredType(type);
+        if (declaredType == null) // primitive type
+            return Stream.empty();
+
+        return declaredType
+                .getTypeArguments()
+                .stream()
+                .flatMap(typeArg -> Stream.concat(Stream.of(genericTypeArgQualifiedName(typeArg)), genericTypeArgQualifiedNames(typeArg)));
     }
 
     /**
@@ -192,11 +223,10 @@ public final class TypeUtil {
 
 
     /**
-     * {@return the simple name of a class, without the package name}
+     * {@return the simple name of a class, without the package name, which is also removed from any generic type arguments}
      */
     public static String getSimpleClassName(final String fullyQualifiedClassName){
-        final int i = fullyQualifiedClassName.lastIndexOf('.');
-        return i == -1 ? fullyQualifiedClassName : fullyQualifiedClassName.substring(i+1);
+        return TYPE_QUALIFIER.matcher(fullyQualifiedClassName).replaceAll("");
     }
 
     /**

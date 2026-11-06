@@ -173,6 +173,19 @@ public class RecordGeneratorTest extends AbstractProcessorTest {
     }
 
     /**
+     * Checks the generation of a DTO record for {@link Class11}, whose generic fields have type arguments
+     * from other packages. The type must use simple names, importing each type argument.
+     */
+    @Test
+    void generateWithGenericTypeArgsFromOtherPackages() {
+        final var instance = newInstance(Class11.class);
+        final String generatedRecordCode = instance.generate();
+        final String expectedRecordCode = TestUtil.loadSampleSourceFile("Class11DTO.java");
+
+        assertCodeEquals(expectedRecordCode, generatedRecordCode);
+    }
+
+    /**
      * Checks the generation of a DTO record for {@link Class7}, which is used as the item type of collections in {@link Class10}.
      */
     @Test
