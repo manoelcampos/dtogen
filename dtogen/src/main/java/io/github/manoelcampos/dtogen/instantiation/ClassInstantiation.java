@@ -43,6 +43,7 @@ public final class ClassInstantiation extends ObjectInstantiation {
      * the value is given to the constructor or to a specific setter method, respectively.
      * @param sourceField model field to generate the value to be passed to the class/record constructor
      */
+    @Override
     protected String generateFieldValueInternal(final VariableElement sourceField) {
         final boolean sourceFieldAnnotatedWithMapToId = AnnotationData.contains(sourceField, DTO.MapToId.class);
         final var fieldValue = fieldValue(sourceField, sourceFieldAnnotatedWithMapToId);

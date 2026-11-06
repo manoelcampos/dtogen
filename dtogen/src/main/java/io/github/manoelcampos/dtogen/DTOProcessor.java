@@ -59,12 +59,12 @@ public class DTOProcessor extends AbstractProcessor {
     public boolean process(final Set<? extends TypeElement> annotations, final RoundEnvironment roundEnv) {
         createDtoInterface();
         annotations.forEach(annotation -> processAnnotation(roundEnv, annotation));
-        return true;
+        return false;
     }
 
     /**
      * Process the {@link DTO} annotation found on a class.
-     * @param roundEnv
+     * @param roundEnv the environment of the current annotation processing round
      * @param annotation the {@link DTO} annotation to be processed
      */
     private void processAnnotation(final RoundEnvironment roundEnv, final TypeElement annotation) {

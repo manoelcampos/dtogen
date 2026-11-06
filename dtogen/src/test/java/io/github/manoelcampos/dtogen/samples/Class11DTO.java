@@ -6,6 +6,7 @@ import javax.annotation.processing.Generated;
 import java.time.LocalDate;
 import java.util.List;
 
+import java.lang.reflect.Type;
 import java.util.Map;
 
 /// A sample of the DTO record that the DTOGen must generate for the [Class11] model.
@@ -18,13 +19,14 @@ import java.util.Map;
  * A {@link DTORecord Data Transfer Object} for {@link Class11}.
  */
 @Generated(value = "io.github.manoelcampos.dtogen.DTOProcessor", comments = "DTO generated using DTOGen Annotation Processor")
-public record Class11DTO (Long id, List<Class12DTO> items, Map<String, List<LocalDate>> dates) implements DTORecord<Class11> {
+public record Class11DTO (Long id, List<Class12DTO> items, Map<String, List<LocalDate>> dates, Type type) implements DTORecord<Class11> {
     @Override
     public Class11 toModel(){
         final var model = new Class11();
         model.setId(id);
         model.setItems(items.stream().map(Class12DTO::toModel).toList());
         model.setDates(dates);
+        model.setType(type);
 
         return model;
     }
@@ -34,13 +36,14 @@ public record Class11DTO (Long id, List<Class12DTO> items, Map<String, List<Loca
         final var dto = new Class11DTO(
             model.getId(),
             model.getItems().stream().map(item -> new Class12DTO().fromModel(item)).toList(),
-            model.getDates()
+            model.getDates(),
+            model.getType()
         );
 
         return dto;
     }
 
     public Class11DTO() {
-        this(0L, null, null);
+        this(0L, null, null, null);
     }
 }

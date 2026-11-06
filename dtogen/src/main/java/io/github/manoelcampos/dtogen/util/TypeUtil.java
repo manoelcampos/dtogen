@@ -11,6 +11,7 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -79,7 +80,7 @@ public final class TypeUtil {
         final var typeMirror = fieldElement.asType();
         final var declaredType = getAsDeclaredType(typeMirror);
         if (declaredType == null) // is primitive
-            return typeMirror.getKind().toString().toLowerCase();
+            return typeMirror.getKind().toString().toLowerCase(Locale.ROOT);
 
         final var typeElement = (TypeElement) declaredType.asElement();
         // Check if the type has generic parameters

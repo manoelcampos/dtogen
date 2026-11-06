@@ -111,9 +111,9 @@ public class JavaDocExtractor {
     }
 
     private void parseField(final CompilationUnitTree unitTree, final DocTrees docTrees, final Tree member) {
-        if (member instanceof VariableTree) {
+        if (member instanceof VariableTree variableTree) {
             final var optional = extractJavaDoc(docTrees, TreePath.getPath(unitTree, member));
-            optional.ifPresent(javadoc -> fieldCommentsMap.put(((VariableTree) member).getName().toString(), javadoc));
+            optional.ifPresent(javadoc -> fieldCommentsMap.put(variableTree.getName().toString(), javadoc));
         }
     }
 

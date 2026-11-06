@@ -3,6 +3,7 @@ package io.github.manoelcampos.dtogen;
 import io.github.manoelcampos.dtogen.util.TypeUtil;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.function.Function;
 
 import static java.util.stream.Collectors.joining;
@@ -36,7 +37,7 @@ public class JavaFileReader {
         final String newPackageName = "package %s;%n".formatted(packageName);
         final Function<String, String> packageReplacer = line -> line.startsWith("package") ? newPackageName : line;
 
-        try (var fileReader = new BufferedReader(new InputStreamReader(inputStream))){
+        try (var fileReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))){
             return fileReader.lines()
                              .filter(TypeUtil::isNotThreeSlashesComment)
                              .map(packageReplacer)
